@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NFL Higher / Lower</title>
+  <link rel="preconnect" href="https://static.www.nfl.com" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <main id="app">
+
+    <!-- START / CATEGORY SELECT -->
+    <section id="screen-start" class="screen is-active">
+      <h1 class="title">NFL <span>Higher<em>/</em>Lower</span></h1>
+      <p class="tagline">Pick a stat. Guess if the next player-season is higher or lower. Keep the streak alive.</p>
+      <p id="loading" class="loading">Loading player data…</p>
+      <div id="category-grid" class="category-grid" hidden></div>
+      <p class="best-line">Best streak: <strong id="start-best">0</strong></p>
+    </section>
+
+    <!-- GAME -->
+    <section id="screen-game" class="screen">
+      <header class="hud">
+        <button id="quit-btn" class="ghost-btn" title="Back to menu">&larr;</button>
+        <div class="hud-stat">
+          <span class="hud-label">Streak</span>
+          <span id="streak" class="hud-value">0</span>
+        </div>
+        <div class="hud-cat" id="hud-cat"></div>
+        <div class="hud-stat">
+          <span class="hud-label">Best</span>
+          <span id="best" class="hud-value">0</span>
+        </div>
+      </header>
+
+      <div class="cards">
+        <!-- ANCHOR (revealed) -->
+        <article class="card" id="card-anchor">
+          <div class="card-photo"><img alt="" /></div>
+          <h2 class="card-name"></h2>
+          <p class="card-meta"></p>
+          <p class="card-stat">
+            <span class="stat-value"></span>
+            <span class="stat-label"></span>
+          </p>
+        </article>
+
+        <div class="vs">VS</div>
+
+        <!-- CHALLENGER (hidden until guess) -->
+        <article class="card" id="card-challenger">
+          <div class="card-photo"><img alt="" /></div>
+          <h2 class="card-name"></h2>
+          <p class="card-meta"></p>
+          <p class="card-prompt" id="prompt">Has <span class="hl-stat"></span></p>
+          <div class="guess-btns">
+            <button class="guess-btn higher" data-dir="higher">▲ Higher</button>
+            <button class="guess-btn lower" data-dir="lower">▼ Lower</button>
+          </div>
+          <p class="card-stat reveal">
+            <span class="stat-value"></span>
+            <span class="stat-label"></span>
+          </p>
+        </article>
+      </div>
+
+      <div id="verdict" class="verdict"></div>
+    </section>
+
+    <!-- GAME OVER -->
+    <section id="screen-over" class="screen">
+      <h2 class="over-title">Streak ended</h2>
+      <p class="over-streak">You reached a streak of <strong id="final-streak">0</strong></p>
+      <p id="new-best" class="new-best" hidden>🏆 New best!</p>
+      <p id="over-detail" class="over-detail"></p>
+      <div class="over-btns">
+        <button id="again-btn" class="primary-btn">Play again</button>
+        <button id="menu-btn" class="secondary-btn">Change stat</button>
+      </div>
+    </section>
+
+  </main>
+  <script src="js/game.js"></script>
+</body>
+</html>

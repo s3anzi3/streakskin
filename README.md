@@ -1,4 +1,4 @@
-# NFL Higher / Lower
+# StreakSkin
 
 An endless NFL "higher or lower" streak game built on real player-season stats.
 Pick a stat (passing yards, receptions, fantasy points, …), then guess whether each

@@ -1,5 +1,7 @@
 # StreakSkin
 
+**Play it live: https://streakskin.web.app**
+
 An endless NFL "higher or lower" streak game built on real player-season stats.
 Pick a stat (passing yards, receptions, fantasy points, …), then guess whether each
 new player-season is higher or lower than the current one. Right = streak continues

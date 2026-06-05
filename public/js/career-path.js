@@ -77,16 +77,33 @@
     ];
   }
 
-  // 4 mixed-position options, era-overlapping, including the answer.
+  const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  const take = (a) => a.splice((Math.random() * a.length) | 0, 1)[0];
+
+  // 4 options that span multiple positions: answer + 1 same-position distractor
+  // (so a position reveal isn't an auto-win) + 2 other-position distractors.
   function pickOptions(c) {
-    const era = S.pool.filter((o) => o.id !== c.id && o.max >= c.min - 8 && o.min <= c.max + 8);
-    const pool = (era.length >= 3 ? era : S.pool.filter((o) => o.id !== c.id)).slice();
+    let cand = S.pool.filter((o) => o.id !== c.id && o.max >= c.min - 8 && o.min <= c.max + 8);
+    if (cand.length < 6) cand = S.pool.filter((o) => o.id !== c.id);
+    const byPos = {};
+    cand.forEach((o) => { (byPos[o.pos] = byPos[o.pos] || []).push(o); });
+
     const picks = [];
-    while (picks.length < 3 && pool.length) picks.push(pool.splice((Math.random() * pool.length) | 0, 1)[0]);
+    // one same-position distractor (fall back to whole pool if needed)
+    if (byPos[c.pos] && byPos[c.pos].length) picks.push(take(byPos[c.pos]));
+    else { const sp = S.pool.filter((o) => o.id !== c.id && o.pos === c.pos); if (sp.length) picks.push(take(sp)); }
+    // distractors from other positions, each a distinct position
+    for (const p of shuffle(Object.keys(byPos).filter((p) => p !== c.pos))) {
+      if (picks.length >= 3) break;
+      if (byPos[p].length) picks.push(take(byPos[p]));
+    }
+    // top up if still short (small era pools)
+    const rest = cand.filter((o) => !picks.includes(o));
+    while (picks.length < 3 && rest.length) picks.push(take(rest));
+
     const opts = picks.map((o) => ({ id: o.id, name: o.name }));
     opts.push({ id: c.id, name: c.name });
-    for (let i = opts.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [opts[i], opts[j]] = [opts[j], opts[i]]; }
-    return opts;
+    return shuffle(opts);
   }
 
   function newRun() {

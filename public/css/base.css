@@ -79,6 +79,9 @@ button { font-family: inherit; }
 }
 :focus:not(:focus-visible) { outline: none; }
 
+/* small inline team logo (used across all pages/games) */
+.tlogo { width: 18px; height: 18px; object-fit: contain; vertical-align: -4px; }
+
 /* shared wordmark (EBK) */
 .wordmark {
   font-weight: 900;

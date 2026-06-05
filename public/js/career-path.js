@@ -2,7 +2,7 @@
 (() => {
   "use strict";
   const BEST_KEY = "ebk_careerpath_best_v2"; // v2: facts model, score = correct
-  const POS_REVEALS = 5;                      // "reveal position" lifelines per run
+  const REVEALS = 5;                          // "reveal hidden fact" lifelines per run
   const $ = (s, r = document) => r.querySelector(s);
   const rand = (a) => a[(Math.random() * a.length) | 0];
   const getBest = () => { try { return +localStorage.getItem(BEST_KEY) || 0; } catch { return 0; } };
@@ -10,7 +10,7 @@
 
   const S = {
     careers: new Map(), pool: [],
-    mystery: null, options: [], posShown: false, posLeft: POS_REVEALS,
+    mystery: null, options: [], hiddenIdx: 0, revealed: false, revealsLeft: REVEALS,
     score: 0, best: 0, locked: false,
   };
 
@@ -64,12 +64,12 @@
     }
   }
 
-  function facts(c, posShown) {
+  function facts(c) {
     const draft = c.dy
       ? `${c.dy} · Round ${c.dr || "?"} · Pick ${c.dp || "?"}${c.dt ? " (" + NFL.name(c.dt) + ")" : ""}`
       : "Undrafted";
     return [
-      { icon: "🏈", k: "Position", v: posShown ? posName(c.pos) : "hidden — use a reveal", locked: !posShown },
+      { icon: "🏈", k: "Position", v: posName(c.pos) },
       { icon: "🎟️", k: "Draft", v: draft },
       { icon: "🎓", k: "College", v: c.college || "Unknown" },
       { icon: "📅", k: "Career", v: `${c.min}–${c.max} · ${c.count} season${c.count > 1 ? "s" : ""}` },
@@ -90,14 +90,15 @@
   }
 
   function newRun() {
-    S.score = 0; S.posLeft = POS_REVEALS;
+    S.score = 0; S.revealsLeft = REVEALS;
     $("#score").textContent = "0";
     nextRound();
   }
 
   function nextRound() {
     S.mystery = rand(S.pool);
-    S.posShown = false;
+    S.hiddenIdx = (Math.random() * 5) | 0;   // hide one of the 5 facts
+    S.revealed = false;
     S.options = pickOptions(S.mystery);
     S.locked = false;
     $("#banner").textContent = ""; $("#banner").className = "banner";
@@ -107,21 +108,23 @@
   }
 
   function render() {
+    const fs = facts(S.mystery);
     const cl = $("#facts");
     cl.innerHTML = "";
-    for (const f of facts(S.mystery, S.posShown)) {
+    fs.forEach((f, i) => {
+      const hidden = i === S.hiddenIdx && !S.revealed && !S.locked;
       const div = document.createElement("div");
-      div.className = "clue" + (f.locked ? " locked" : "");
-      div.innerHTML = `<span class="c-icon">${f.locked ? "🔒" : f.icon}</span>` +
-        `<div><div class="c-k">${f.k}</div><div class="c-v">${f.v}</div></div>`;
+      div.className = "clue" + (hidden ? " locked" : "");
+      div.innerHTML = `<span class="c-icon">${hidden ? "🔒" : f.icon}</span>` +
+        `<div><div class="c-k">${f.k}</div><div class="c-v">${hidden ? "hidden — use a reveal" : f.v}</div></div>`;
       cl.appendChild(div);
-    }
+    });
 
     $("#lifelines").hidden = S.locked;
-    const pb = $("#reveal-pos");
-    if (S.posShown) { pb.disabled = true; pb.textContent = "🏈 position shown"; }
-    else if (S.posLeft <= 0) { pb.disabled = true; pb.textContent = "🏈 no position reveals left"; }
-    else { pb.disabled = false; pb.textContent = `🏈 Reveal position (${S.posLeft})`; }
+    const pb = $("#reveal-fact");
+    if (S.revealed) { pb.disabled = true; pb.textContent = "🔎 fact revealed"; }
+    else if (S.revealsLeft <= 0) { pb.disabled = true; pb.textContent = "🔎 no reveals left"; }
+    else { pb.disabled = false; pb.textContent = `🔎 Reveal ${fs[S.hiddenIdx].k} (${S.revealsLeft})`; }
 
     const ol = $("#options");
     ol.innerHTML = "";
@@ -184,9 +187,9 @@
     b.addEventListener("click", fn); row.appendChild(b);
   }
 
-  $("#reveal-pos").addEventListener("click", () => {
-    if (S.locked || S.posShown || S.posLeft <= 0) return;
-    S.posShown = true; S.posLeft--;
+  $("#reveal-fact").addEventListener("click", () => {
+    if (S.locked || S.revealed || S.revealsLeft <= 0) return;
+    S.revealed = true; S.revealsLeft--;
     render();
   });
 

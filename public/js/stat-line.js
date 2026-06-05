@@ -13,7 +13,13 @@
     ["receiving_yards", "Rec Yds"],
     ["receiving_tds", "Rec TD"],
     ["fantasy_points_ppr", "Fantasy (PPR)"],
+    ["def_sacks", "Sacks"],
+    ["tackles", "Tackles"],
+    ["def_interceptions", "Interceptions"],
+    ["def_pass_defended", "Passes Def"],
+    ["def_fumbles_forced", "Forced Fum"],
   ];
+  const dec1 = (k) => k === "def_sacks" || k.startsWith("fantasy");
   const EXACT_REVEALS = 5; // "reveal exact season" lifelines per run
   const RANGE_W = 3;       // season range width: 4 inclusive years (e.g. 2015–2018)
   const MIN_Y = 1999, MAX_Y = 2025;
@@ -34,7 +40,12 @@
     return (s.fantasy_points_ppr || 0) >= 60 ||
            (s.passing_yards || 0) >= 1200 ||
            (s.rushing_yards || 0) >= 450 ||
-           (s.receiving_yards || 0) >= 450;
+           (s.receiving_yards || 0) >= 450 ||
+           (s.def_sacks || 0) >= 5 ||
+           (s.tackles || 0) >= 75 ||
+           (s.def_interceptions || 0) >= 3 ||
+           (s.def_fumbles_forced || 0) >= 3 ||
+           (s.def_pass_defended || 0) >= 12;
   }
 
   async function load() {
@@ -45,13 +56,14 @@
       S.players = data.players;
       for (const p of S.players) {
         if (!p.id) continue;
+        const grp = p.grp || p.pos;
         let b = S.byId.get(p.id);
-        if (!b) { b = { id: p.id, name: p.name, pos: p.pos, min: p.season, max: p.season }; S.byId.set(p.id, b); }
+        if (!b) { b = { id: p.id, name: p.name, pos: p.pos, grp, min: p.season, max: p.season }; S.byId.set(p.id, b); }
         b.min = Math.min(b.min, p.season); b.max = Math.max(b.max, p.season);
-        if (!S.posIndex.has(p.pos)) S.posIndex.set(p.pos, new Set());
-        S.posIndex.get(p.pos).add(p.id);
+        if (!S.posIndex.has(grp)) S.posIndex.set(grp, new Set());
+        S.posIndex.get(grp).add(p.id);
       }
-      for (const [pos, set] of S.posIndex) S.posIndex.set(pos, [...set]);
+      for (const [grp, set] of S.posIndex) S.posIndex.set(grp, [...set]);
       S.notable = S.players.filter(isNotable);
       S.best = getBest();
       $("#best").textContent = S.best;
@@ -78,7 +90,7 @@
   }
 
   function pickOptions(mystery) {
-    const samePos = (S.posIndex.get(mystery.pos) || []).map((id) => S.byId.get(id));
+    const samePos = (S.posIndex.get(mystery.grp || mystery.pos) || []).map((id) => S.byId.get(id));
     // prefer players whose careers overlap the mystery's era (+/- 6 yrs)
     const era = samePos.filter((b) => b.id !== mystery.id &&
       b.max >= mystery.season - 6 && b.min <= mystery.season + 6);
@@ -113,7 +125,7 @@
     const rows = [`<div class="s-k">Games</div><div class="s-v">${m.games || "—"}</div>`];
     for (const [k, label] of DISPLAY) {
       if (m.stats[k] == null) continue;
-      rows.push(`<div class="s-k">${label}</div><div class="s-v">${fmt(m.stats[k], k.startsWith("fantasy") ? 1 : 0)}</div>`);
+      rows.push(`<div class="s-k">${label}</div><div class="s-v">${fmt(m.stats[k], dec1(k) ? 1 : 0)}</div>`);
     }
     $("#statline").innerHTML = rows.join("");
 
@@ -193,8 +205,15 @@
   }
 
   function posName(p) {
-    return { QB: "Quarterback", RB: "Running Back", FB: "Fullback", HB: "Running Back", WR: "Wide Receiver", TE: "Tight End" }[p] || p;
+    return POS_NAMES[p] || p;
   }
+  const POS_NAMES = {
+    QB: "Quarterback", RB: "Running Back", FB: "Fullback", HB: "Running Back",
+    WR: "Wide Receiver", TE: "Tight End",
+    DE: "Defensive End", DT: "Defensive Tackle", NT: "Nose Tackle", DL: "Defensive Lineman", EDGE: "Edge Rusher",
+    LB: "Linebacker", OLB: "Outside Linebacker", ILB: "Inside Linebacker", MLB: "Middle Linebacker",
+    CB: "Cornerback", S: "Safety", FS: "Free Safety", SS: "Strong Safety", DB: "Defensive Back",
+  };
 
   $("#reveal-exact").addEventListener("click", () => {
     if (S.locked || S.exactShown || S.exactLeft <= 0) return;

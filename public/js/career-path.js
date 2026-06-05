@@ -16,11 +16,19 @@
 
   function isNotable(s) {
     return (s.fantasy_points_ppr || 0) >= 60 || (s.passing_yards || 0) >= 1200 ||
-           (s.rushing_yards || 0) >= 450 || (s.receiving_yards || 0) >= 450;
+           (s.rushing_yards || 0) >= 450 || (s.receiving_yards || 0) >= 450 ||
+           (s.def_sacks || 0) >= 5 || (s.tackles || 0) >= 75 ||
+           (s.def_interceptions || 0) >= 3 || (s.def_fumbles_forced || 0) >= 3 ||
+           (s.def_pass_defended || 0) >= 12;
   }
-  function posName(p) {
-    return { QB: "Quarterback", RB: "Running Back", FB: "Fullback", HB: "Running Back", WR: "Wide Receiver", TE: "Tight End" }[p] || p;
-  }
+  const POS_NAMES = {
+    QB: "Quarterback", RB: "Running Back", FB: "Fullback", HB: "Running Back",
+    WR: "Wide Receiver", TE: "Tight End",
+    DE: "Defensive End", DT: "Defensive Tackle", NT: "Nose Tackle", DL: "Defensive Lineman", EDGE: "Edge Rusher",
+    LB: "Linebacker", OLB: "Outside Linebacker", ILB: "Inside Linebacker", MLB: "Middle Linebacker",
+    CB: "Cornerback", S: "Safety", FS: "Free Safety", SS: "Strong Safety", DB: "Defensive Back",
+  };
+  function posName(p) { return POS_NAMES[p] || p; }
 
   async function load() {
     try {

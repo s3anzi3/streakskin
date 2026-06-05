@@ -12,6 +12,11 @@
     ["rec1000",  "1,000+ Rec Yds",  "receiving_yards", 1000],
     ["rec100",   "100+ Catches",    "receptions",    100],
     ["rec10",    "10+ Rec TD",      "receiving_tds", 10],
+    ["sack10",   "10+ Sacks",       "def_sacks",     10],
+    ["tk100",    "100+ Tackles",    "tackles",       100],
+    ["int5",     "5+ INT (season)", "def_interceptions", 5],
+    ["pd15",     "15+ Passes Def",  "def_pass_defended", 15],
+    ["ff4",      "4+ Forced Fum",   "def_fumbles_forced", 4],
   ];
 
   const S = {
@@ -54,7 +59,7 @@
       let a = byId.get(p.id);
       if (!a) {
         const bio = people[p.id] || {};
-        a = { id: p.id, name: p.name, pos: normPos(p.pos), headshot: p.headshot,
+        a = { id: p.id, name: p.name, pos: p.grp || normPos(p.pos), headshot: p.headshot,
               teams: new Set(), ach: new Set(),
               r1: bio.draftRound === 1, undrafted: bio.draftYear == null,
               min: p.season, max: p.season };
@@ -74,7 +79,9 @@
     const crit = [];
     NFL.franchises.forEach((f) => crit.push({ type: "team", key: f.key, label: f.name }));
     ACH.forEach(([key, label]) => crit.push({ type: "ach", key, label }));
-    [["QB", "QB"], ["RB", "RB"], ["WR", "WR"], ["TE", "TE"]].forEach(([k, l]) => crit.push({ type: "pos", key: k, label: l }));
+    [["QB", "QB"], ["RB", "RB"], ["WR", "WR"], ["TE", "TE"],
+     ["DL", "D-Line"], ["LB", "Linebacker"], ["DB", "Def. Back"]]
+      .forEach(([k, l]) => crit.push({ type: "pos", key: k, label: l }));
     crit.push({ type: "flag", key: "r1", label: "1st-Rd Pick" });
     crit.push({ type: "flag", key: "undrafted", label: "Undrafted" });
     // precompute satisfaction set (roster indices) for each criterion

@@ -45,33 +45,63 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 RAW_DIR = os.path.join(HERE, "raw")
 OUT_PATH = os.path.normpath(os.path.join(HERE, "..", "public", "data", "players.json"))
 
-# Offensive skill positions only.
-SKILL_POS = {"QB", "RB", "FB", "HB", "WR", "TE"}
+# Position groups we keep: offensive skill + defense (no OL / special teams).
+OFF_GROUPS = {"QB", "RB", "WR", "TE"}
+DEF_GROUPS = {"DL", "LB", "DB"}
+INCLUDE_GROUPS = OFF_GROUPS | DEF_GROUPS
+
+
+def group_of(row):
+    """Position group (QB/RB/WR/TE/DL/LB/DB) or '' if not a kept group."""
+    g = (row.get("position_group") or "").upper()
+    if g in INCLUDE_GROUPS:
+        return g
+    p = (row.get("position") or "").upper()
+    if p == "QB": return "QB"
+    if p in {"RB", "FB", "HB"}: return "RB"
+    if p == "WR": return "WR"
+    if p == "TE": return "TE"
+    if p in {"DE", "DT", "NT", "DL", "EDGE"}: return "DL"
+    if p in {"LB", "OLB", "ILB", "MLB"}: return "LB"
+    if p in {"CB", "S", "FS", "SS", "DB"}: return "DB"
+    return ""
+
 
 # A player-season qualifies for a stat category only if it was active in that
 # stat AREA. Activity = ANY column in the area is non-zero. This is robust to
 # early seasons where a single "opportunity" column is unreliable (e.g. 2003
-# has targets=0 for players who clearly caught passes).
+# has targets=0 for players who clearly caught passes). "tackles" is synthesized
+# (solo + assists) before processing.
 AREA_COLS = {
     "pass": ["attempts", "passing_yards", "passing_tds"],
     "rush": ["carries", "rushing_yards", "rushing_tds"],
     "recv": ["targets", "receptions", "receiving_yards", "receiving_tds"],
+    "def":  ["def_sacks", "tackles", "def_interceptions", "def_pass_defended",
+             "def_fumbles_forced", "def_tackles_for_loss", "def_qb_hits", "def_tds"],
 }
 
-# Stat categories. Each: (csv_column, label, decimals, icon, area, positions)
-#   area:      stat area whose activity gates inclusion (None => any season played).
-#   positions: restrict the category to these positions (None => any skill pos).
+# Stat categories. Each: (csv_column, label, decimals, icon, area, groups)
+#   area:   "pass"/"rush"/"recv"/"def" activity that gates inclusion;
+#           "off" => any offensive area active (used by fantasy).
+#   groups: restrict the category to these position groups (None => any).
 CATEGORIES = [
-    ("passing_yards",      "Passing Yards",        0, "\U0001F3AF", "pass", {"QB"}),
-    ("passing_tds",        "Passing TDs",          0, "\U0001F680", "pass", {"QB"}),
-    ("rushing_yards",      "Rushing Yards",        0, "\U0001F3C3", "rush", None),
-    ("rushing_tds",        "Rushing TDs",          0, "\U0001F4A8", "rush", None),
-    ("receiving_yards",    "Receiving Yards",      0, "\U0001F64C", "recv", None),
-    ("receptions",         "Receptions",           0, "\U0001F9E4", "recv", None),
-    ("receiving_tds",      "Receiving TDs",        0, "\U0001F525", "recv", None),
-    ("fantasy_points",     "Fantasy Points (Std)", 1, "\U0001F3C8", None,   None),
-    ("fantasy_points_ppr", "Fantasy Points (PPR)", 1, "⭐",     None,   None),
+    ("passing_yards",       "Passing Yards",        0, "\U0001F3AF", "pass", {"QB"}),
+    ("passing_tds",         "Passing TDs",          0, "\U0001F680", "pass", {"QB"}),
+    ("rushing_yards",       "Rushing Yards",        0, "\U0001F3C3", "rush", OFF_GROUPS),
+    ("rushing_tds",         "Rushing TDs",          0, "\U0001F4A8", "rush", OFF_GROUPS),
+    ("receiving_yards",     "Receiving Yards",      0, "\U0001F64C", "recv", OFF_GROUPS),
+    ("receptions",          "Receptions",           0, "\U0001F9E4", "recv", OFF_GROUPS),
+    ("receiving_tds",       "Receiving TDs",        0, "\U0001F525", "recv", OFF_GROUPS),
+    ("fantasy_points",      "Fantasy Points (Std)", 1, "\U0001F3C8", "off",  OFF_GROUPS),
+    ("fantasy_points_ppr",  "Fantasy Points (PPR)", 1, "⭐",     "off",  OFF_GROUPS),
+    ("def_sacks",           "Sacks",                1, "\U0001F4A5", "def",  DEF_GROUPS),
+    ("tackles",             "Tackles",              0, "\U0001F6D1", "def",  DEF_GROUPS),
+    ("def_interceptions",   "Interceptions",        0, "✋",     "def",  DEF_GROUPS),
+    ("def_pass_defended",   "Passes Defended",      0, "\U0001F6E1️", "def", DEF_GROUPS),
+    ("def_fumbles_forced",  "Forced Fumbles",       0, "\U0001F4A2", "def",  DEF_GROUPS),
 ]
+# Note: def_tackles_for_loss is dropped — nflverse has it missing (all 0) for
+# 2003-2011, so it would compare bogus zeros across eras.
 
 # -----------------------------------------------------------------------------
 
@@ -141,6 +171,8 @@ def to_num(raw):
     """Parse a CSV cell into a float, or None if blank/non-numeric."""
     if raw is None:
         return None
+    if isinstance(raw, (int, float)):
+        return float(raw)
     raw = raw.strip()
     if raw == "" or raw.upper() == "NA":
         return None
@@ -178,30 +210,32 @@ def build():
         reader = csv.DictReader(io.StringIO(text))
         kept = 0
         for row in reader:
-            pos = (row.get("position") or "").upper()
-            if pos not in SKILL_POS:
+            grp = group_of(row)
+            if grp not in INCLUDE_GROUPS:
                 continue
+            pos = (row.get("position") or grp).upper()
 
             key = (row.get("player_id"), row.get("season"))
             if key in seen:
                 continue
 
             games = to_num(row.get("games")) or 0
+            # synthesize total tackles (solo + assists)
+            row["tackles"] = (to_num(row.get("def_tackles_solo")) or 0) + \
+                             (to_num(row.get("def_tackle_assists")) or 0)
 
             # which stat areas was this player-season active in?
             active = {
                 area: any((to_num(row.get(c)) or 0) != 0 for c in cols)
                 for area, cols in AREA_COLS.items()
             }
+            active["off"] = active["pass"] or active["rush"] or active["recv"]
 
             stats = {}
-            for col, _label, decimals, _icon, area, positions in CATEGORIES:
-                if positions and pos not in positions:
+            for col, _label, decimals, _icon, area, groups in CATEGORIES:
+                if groups and grp not in groups:
                     continue
-                if area is not None:
-                    if not active[area]:
-                        continue
-                elif games <= 0:          # fantasy categories: must have played
+                if not active.get(area, False):
                     continue
                 value = to_num(row.get(col))
                 if value is None:         # blank in-area stat -> treat as 0
@@ -217,6 +251,7 @@ def build():
                 "id": row.get("player_id") or "",
                 "name": row.get("player_display_name") or row.get("player_name"),
                 "pos": pos,
+                "grp": grp,
                 "season": int(row["season"]),
                 "team": row.get("recent_team") or "",
                 "games": int(games),

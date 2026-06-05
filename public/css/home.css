@@ -65,29 +65,53 @@
 .hero-cta:hover { transform: translateY(-2px); filter: brightness(1.07); }
 .hero-cta:active { transform: scale(0.97); }
 
-/* team logo strip — continuous infinite marquee (all 32 teams cycling) */
+/* team logos travelling down a football field (turf + yard lines + hashmarks) */
 .logo-strip {
-  overflow: hidden;
-  padding: 8px 0;
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 116px;
   margin-top: var(--sp-lg);
-  -webkit-mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
-  mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+  overflow: hidden;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: inset 0 0 28px rgba(0, 0, 0, 0.45), var(--elev-2);
+  background:
+    repeating-linear-gradient(90deg, transparent 0 118px, rgba(255,255,255,0.13) 118px 120px),
+    repeating-linear-gradient(90deg, #114a2d 0 60px, #0e3f26 60px 120px);
 }
+/* solid sidelines top & bottom */
+.logo-strip::before,
+.logo-strip::after {
+  content: "";
+  position: absolute; left: 0; right: 0; height: 10px;
+  pointer-events: none; z-index: 1;
+  /* hashmark ticks */
+  background: repeating-linear-gradient(90deg, transparent 0 18px, rgba(255,255,255,0.55) 18px 20px);
+}
+.logo-strip::before { top: 16px; box-shadow: 0 -9px 0 rgba(255,255,255,0.25); }
+.logo-strip::after { bottom: 16px; box-shadow: 0 9px 0 rgba(255,255,255,0.25); }
+
 .logo-track {
+  position: relative; z-index: 2;
   display: flex;
   width: max-content;
   animation: marquee 48s linear infinite;
 }
-/* pause only when hovering an actual logo (not the whole strip) */
+/* pause only when hovering an actual logo (not the whole field) */
 .logo-track:has(.strip-logo:hover) { animation-play-state: paused; }
-/* margin (not flex gap) so translateX(-50%) loops seamlessly */
+/* each logo rides on a "coin" so it reads over the turf; margin (not gap)
+   keeps the translateX(-50%) loop seamless */
 .strip-logo {
-  display: inline-flex; flex: none;
-  margin-right: 30px; opacity: 0.85;
-  transition: transform 0.15s ease, opacity 0.15s ease;
+  display: inline-flex; align-items: center; justify-content: center; flex: none;
+  width: 56px; height: 56px; margin-right: 36px; border-radius: 50%;
+  background: radial-gradient(circle at 50% 35%, rgba(255,255,255,0.14), rgba(8,12,24,0.74));
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
+  transition: transform 0.15s ease;
 }
-.strip-logo img { width: 42px; height: 42px; object-fit: contain; display: block; }
-.strip-logo:hover { transform: scale(1.25); opacity: 1; }
+.strip-logo img { width: 38px; height: 38px; object-fit: contain; display: block; }
+.strip-logo:hover { transform: scale(1.16) translateY(-2px); }
 @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 
 /* sport section */

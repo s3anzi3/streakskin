@@ -23,100 +23,76 @@
   <main>
     <section class="hero wrap">
       <h1 class="rise">How <span class="accent">elite</span> is your ball knowledge?</h1>
-      <p class="rise d1">A growing arcade of sports games that put your knowledge to the test — build streaks, climb the ranks, and compete against other players. Pick a game below and prove it.</p>
-      <a class="hero-cta rise d2" href="/nfl/higher-lower/">🏈 Play NFL Higher / Lower</a>
+      <p class="rise d1">A growing arcade of sports games that put your knowledge to the test — build streaks, climb the ranks, and compete against other players. Pick a sport to begin.</p>
+      <a class="hero-cta rise d2" href="/nfl">🏈 Enter the NFL arcade</a>
       <div class="logo-strip rise d3" id="logo-strip" aria-hidden="true"></div>
     </section>
 
     <div class="wrap">
-
-      <!-- NFL -->
-      <section class="sport" aria-label="NFL games">
+      <section class="sport-section" aria-label="Choose your sport">
         <div class="sport-head">
-          <span class="sport-icon">🏈</span>
-          <h2 class="sport-name">NFL</h2>
-          <span class="sport-count">4 games live</span>
+          <span class="sport-icon">🎮</span>
+          <h2 class="sport-name">Choose your sport</h2>
+          <span class="sport-count" id="sport-count"></span>
         </div>
-
-        <div class="game-grid">
-
-          <a class="game-card live rise" href="/nfl/higher-lower/">
-            <span class="badge play">Play</span>
-            <span class="game-emoji">📈</span>
-            <h3 class="game-title">Higher / Lower</h3>
-            <p class="game-desc">Two player-seasons, one stat. Guess if the next is higher or lower and run your streak as long as you can.</p>
-            <span class="game-foot">Endless · solo &nbsp;·&nbsp; leaderboards soon</span>
-          </a>
-
-          <a class="game-card live rise d1" href="/nfl/stat-line/">
-            <span class="badge play">Play</span>
-            <span class="game-emoji">🧾</span>
-            <h3 class="game-title">Guess the Stat Line</h3>
-            <p class="game-desc">See a mystery season's numbers and name the player. Fewer clues = more points.</p>
-            <span class="game-foot">Score run · 4 choices</span>
-          </a>
-
-          <a class="game-card live rise d2" href="/nfl/career-path/">
-            <span class="badge play">Play</span>
-            <span class="game-emoji">🗺️</span>
-            <h3 class="game-title">Career Path</h3>
-            <p class="game-desc">Draft slot, college and team path — trace the clues to the player in as few as possible.</p>
-            <span class="game-foot">Score run · 4 choices</span>
-          </a>
-
-          <a class="game-card live rise d3" href="/nfl/player-grid/">
-            <span class="badge play">Play</span>
-            <span class="game-emoji">🔲</span>
-            <h3 class="game-title">Player Grid</h3>
-            <p class="game-desc">Name a player for every team-and-stat intersection. Immaculate-grid vibes, one guess per square.</p>
-            <span class="game-foot">9 squares · autocomplete</span>
-          </a>
-
-        </div>
+        <div class="game-grid" id="sports-grid"></div>
       </section>
-
-      <!-- future sports -->
-      <section class="more-sports" aria-label="More sports coming soon">
-        <p class="label">More sports coming soon</p>
-        <div class="chip-row">
-          <span class="chip">🏀 NBA</span>
-          <span class="chip">⚾ MLB</span>
-          <span class="chip">🏒 NHL</span>
-          <span class="chip">⚽ Soccer</span>
-          <span class="chip">🏈 CFB</span>
-        </div>
-      </section>
-
     </div>
   </main>
 
   <footer class="site-footer">
     <p>EBK · Elite Ball Knowledge &nbsp;·&nbsp; NFL data from
-       <a href="https://github.com/nflverse/nflverse-data">nflverse</a> (1999–2025)</p>
+       <a href="https://github.com/nflverse/nflverse-data">nflverse</a></p>
   </footer>
 
+  <script src="/js/catalog.js"></script>
   <script src="/js/teams.js"></script>
   <script>
+    // football-field marquee
     (function () {
       var strip = document.getElementById("logo-strip");
-      if (!strip || !window.NFL) return;
-      var track = document.createElement("div");
-      track.className = "logo-track";
-      // two identical passes so the -50% marquee loops seamlessly
-      for (var pass = 0; pass < 2; pass++) {
-        NFL.franchises.forEach(function (f) {
-          var a = document.createElement("a");
-          a.className = "strip-logo";
-          a.href = "/nfl/team?t=" + f.key;
-          a.title = f.name;
-          if (pass === 1) a.setAttribute("aria-hidden", "true");
-          var img = document.createElement("img");
-          img.src = NFL.logo(f.key); img.alt = f.name; img.loading = "lazy";
-          a.appendChild(img);
-          track.appendChild(a);
-        });
+      if (strip && window.NFL) {
+        var track = document.createElement("div");
+        track.className = "logo-track";
+        for (var pass = 0; pass < 2; pass++) {
+          NFL.franchises.forEach(function (f) {
+            var a = document.createElement("a");
+            a.className = "strip-logo";
+            a.href = "/nfl/team?t=" + f.key;
+            a.title = f.name;
+            if (pass === 1) a.setAttribute("aria-hidden", "true");
+            var img = document.createElement("img");
+            img.src = NFL.logo(f.key); img.alt = f.name; img.loading = "lazy";
+            a.appendChild(img);
+            track.appendChild(a);
+          });
+        }
+        strip.appendChild(track);
       }
-      strip.appendChild(track);
+    })();
+
+    // sports grid
+    (function () {
+      var grid = document.getElementById("sports-grid");
+      if (!grid || !window.EBK) return;
+      var liveCount = 0;
+      EBK.sports.forEach(function (s) {
+        var live = EBK.sportLive(s.key);
+        if (live) liveCount++;
+        var a = document.createElement("a");
+        a.className = "game-card live sport-card";
+        a.href = "/" + s.key;
+        a.style.setProperty("--accent", s.accent);
+        a.innerHTML =
+          '<span class="badge ' + (live ? "play" : "soon") + '">' + (live ? "Play" : "Soon") + "</span>" +
+          '<span class="game-emoji">' + s.emoji + "</span>" +
+          '<h3 class="game-title">' + s.name + "</h3>" +
+          '<p class="game-desc">' + s.blurb + "</p>" +
+          '<span class="game-foot">' + (live ? "5 games live" : "Preview games") + "</span>";
+        grid.appendChild(a);
+      });
+      var c = document.getElementById("sport-count");
+      if (c) c.textContent = liveCount + " live · " + (EBK.sports.length - liveCount) + " coming soon";
     })();
   </script>
 </body>

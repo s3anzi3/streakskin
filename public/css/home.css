@@ -115,7 +115,25 @@
 @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 
 /* sport section */
-.sport { margin: var(--sp-lg) 0; }
+.sport, .sport-section { margin: var(--sp-lg) 0; }
+.sport-card .game-emoji { font-size: 2.2rem; }
+
+/* team directory grid */
+.team-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: var(--sp-sm);
+  margin-bottom: var(--sp-xl);
+}
+.team-tile {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  padding: var(--sp-md) var(--sp-sm);
+  border: 1px solid var(--line); border-radius: 14px; background: var(--glass);
+  text-align: center; font-weight: 700; font-size: var(--fs-sm); color: var(--text);
+  transition: transform var(--dur) var(--ease-spring), border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+.team-tile img { width: 52px; height: 52px; object-fit: contain; }
+.team-tile:hover { transform: translateY(-4px); border-color: var(--accent); background: var(--glass-strong); }
 .sport-head {
   display: flex;
   align-items: center;

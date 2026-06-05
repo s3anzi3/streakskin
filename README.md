@@ -60,8 +60,21 @@ nfl-higher-lower/            # (repo: ebk · site: eliteballknowledge.web.app)
 │   ├── build_players.py   # nflverse CSV -> players.json
 │   └── raw/               # cached downloads (gitignored)
 └── public/                # static site root (Firebase Hosting)
-    ├── index.html
-    ├── css/styles.css
-    ├── js/game.js
+    ├── index.html         # EBK hub: sports -> games
+    ├── css/
+    │   ├── base.css       # shared design tokens + reset (all pages)
+    │   ├── home.css       # hub/landing styles
+    │   └── styles.css     # Higher/Lower game styles
+    ├── js/game.js         # Higher/Lower game logic
+    ├── nfl/
+    │   └── higher-lower/
+    │       └── index.html # the game (route: /nfl/higher-lower)
     └── data/players.json  # bundled dataset
 ```
+
+### Architecture
+
+The hub (`/`) lists games grouped by sport. Each game is a self-contained route
+under `/<sport>/<game>/` that loads `/css/base.css` (shared tokens) plus its own
+styles/scripts and fetches `/data/...` via absolute paths — so adding a new game
+or sport is just a new folder, no path juggling.

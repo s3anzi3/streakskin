@@ -66,7 +66,7 @@
 
   async function load() {
     try {
-      const res = await fetch("data/players.json", { cache: "no-cache" });
+      const res = await fetch("/data/players.json", { cache: "no-cache" });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       state.data = await res.json();
       buildCategoryGrid();

@@ -3,106 +3,95 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#0b1020" />
-  <meta name="description" content="EBK — Elite Ball Knowledge. An endless NFL higher/lower streak game on real player-season stats." />
+  <meta name="theme-color" content="#0a0e1c" />
+  <meta name="description" content="EBK — Elite Ball Knowledge. Prove your sports knowledge across a growing arcade of games and compete against other players." />
   <title>EBK — Elite Ball Knowledge</title>
-  <link rel="preconnect" href="https://static.www.nfl.com" crossorigin />
-  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
-  <link rel="stylesheet" href="css/styles.css" />
-  <script defer src="https://cdn.jsdelivr.net/npm/animejs@3.2.2/lib/anime.min.js"></script>
+  <link rel="stylesheet" href="/css/base.css" />
+  <link rel="stylesheet" href="/css/home.css" />
 </head>
 <body>
-  <main id="app">
 
-    <!-- START / CATEGORY SELECT -->
-    <section id="screen-start" class="screen is-active" aria-label="Choose a stat">
-      <div class="start-inner">
-        <h1 class="title">E<span>B</span>K</h1>
-        <p class="subtitle">Elite Ball Knowledge</p>
-        <p class="tagline">The NFL higher<em>/</em>lower streak game. Pick a stat, then call whether the next player-season is higher or lower. Stretch the streak as far as you can.</p>
-        <p id="loading" class="loading" role="status" aria-live="polite">Loading player data…</p>
-        <div id="category-grid" class="category-grid" hidden></div>
-        <p class="best-line">Best streak: <strong id="start-best">0</strong></p>
-        <p class="credit">Data: nflverse · 1999–2025 · every skill-position player</p>
-      </div>
+  <header class="site-header">
+    <div class="brand">
+      <span class="wordmark" aria-label="EBK">E<span>B</span>K</span>
+      <span class="brand-sub">Elite Ball Knowledge</span>
+    </div>
+    <span class="header-tag">Prove it.</span>
+  </header>
+
+  <main>
+    <section class="hero wrap">
+      <h1 class="rise">How <span class="accent">elite</span> is your ball knowledge?</h1>
+      <p class="rise d1">A growing arcade of sports games that put your knowledge to the test — build streaks, climb the ranks, and compete against other players. Pick a game below and prove it.</p>
+      <a class="hero-cta rise d2" href="/nfl/higher-lower/">🏈 Play NFL Higher / Lower</a>
     </section>
 
-    <!-- GAME -->
-    <section id="screen-game" class="screen" aria-label="Game">
-      <header class="hud">
-        <button id="quit-btn" class="ghost-btn" aria-label="Back to menu">&larr;</button>
-        <div class="hud-stat">
-          <span class="hud-label">Streak</span>
-          <span id="streak" class="hud-value">0</span>
-        </div>
-        <div class="hud-cat" id="hud-cat"></div>
-        <div class="hud-stat">
-          <span class="hud-label">Best</span>
-          <span id="best" class="hud-value">0</span>
-        </div>
-      </header>
+    <div class="wrap">
 
-      <div class="panels">
-        <!-- ANCHOR (revealed) -->
-        <article class="panel anchor" id="panel-anchor">
-          <div class="panel-bg" aria-hidden="true"></div>
-          <div class="panel-body">
-            <div class="panel-photo"><img alt="" /></div>
-            <h2 class="panel-name"></h2>
-            <p class="panel-meta"></p>
-            <p class="panel-stat">
-              <span class="panel-verb">had</span>
-              <span class="stat-value">0</span>
-              <span class="stat-label"></span>
-            </p>
+      <!-- NFL -->
+      <section class="sport" aria-label="NFL games">
+        <div class="sport-head">
+          <span class="sport-icon">🏈</span>
+          <h2 class="sport-name">NFL</h2>
+          <span class="sport-count">1 game live · more soon</span>
+        </div>
+
+        <div class="game-grid">
+
+          <a class="game-card live rise" href="/nfl/higher-lower/">
+            <span class="badge play">Play</span>
+            <span class="game-emoji">📈</span>
+            <h3 class="game-title">Higher / Lower</h3>
+            <p class="game-desc">Two player-seasons, one stat. Guess if the next is higher or lower and run your streak as long as you can.</p>
+            <span class="game-foot">Endless · solo &nbsp;·&nbsp; leaderboards soon</span>
+          </a>
+
+          <div class="game-card soon" aria-disabled="true">
+            <span class="badge soon">Soon</span>
+            <span class="game-emoji">🧾</span>
+            <h3 class="game-title">Guess the Stat Line</h3>
+            <p class="game-desc">See a mystery season's numbers and name the player. How few hints do you need?</p>
+            <span class="game-foot">In development</span>
           </div>
-        </article>
 
-        <div class="divider"><span class="vs-badge">VS</span></div>
-
-        <!-- CHALLENGER (hidden until guess) -->
-        <article class="panel challenger" id="panel-challenger">
-          <div class="panel-bg" aria-hidden="true"></div>
-          <div class="panel-body">
-            <div class="panel-photo"><img alt="" /></div>
-            <h2 class="panel-name"></h2>
-            <p class="panel-meta"></p>
-
-            <div class="challenger-ask" id="ask">
-              <p class="ask-prompt">had <span class="hl-stat"></span></p>
-              <div class="guess-btns">
-                <button class="guess-btn higher" data-dir="higher">▲ Higher</button>
-                <button class="guess-btn lower" data-dir="lower">▼ Lower</button>
-              </div>
-            </div>
-
-            <p class="panel-stat reveal" id="challenger-reveal" aria-live="polite">
-              <span class="panel-verb">had</span>
-              <span class="stat-value">0</span>
-              <span class="stat-label"></span>
-            </p>
+          <div class="game-card soon" aria-disabled="true">
+            <span class="badge soon">Soon</span>
+            <span class="game-emoji">🗺️</span>
+            <h3 class="game-title">Career Path</h3>
+            <p class="game-desc">Teams, draft slot, college — trace the clues to the player before you run out of guesses.</p>
+            <span class="game-foot">In development</span>
           </div>
-        </article>
-      </div>
 
-      <div id="verdict" class="verdict" role="status" aria-live="assertive"></div>
-    </section>
+          <div class="game-card soon" aria-disabled="true">
+            <span class="badge soon">Soon</span>
+            <span class="game-emoji">🔲</span>
+            <h3 class="game-title">Player Grid</h3>
+            <p class="game-desc">Fill a grid where every square is a team-and-stat intersection. Daily puzzle, immaculate vibes.</p>
+            <span class="game-foot">In development</span>
+          </div>
 
-    <!-- GAME OVER -->
-    <section id="screen-over" class="screen" aria-label="Game over">
-      <div class="over-inner">
-        <p id="new-best" class="new-best" hidden>🏆 New best!</p>
-        <h2 class="over-title">Streak ended</h2>
-        <p class="over-streak">You reached <strong id="final-streak">0</strong></p>
-        <p id="over-detail" class="over-detail"></p>
-        <div class="over-btns">
-          <button id="again-btn" class="primary-btn">Play again</button>
-          <button id="menu-btn" class="secondary-btn">Change stat</button>
         </div>
-      </div>
-    </section>
+      </section>
 
+      <!-- future sports -->
+      <section class="more-sports" aria-label="More sports coming soon">
+        <p class="label">More sports coming soon</p>
+        <div class="chip-row">
+          <span class="chip">🏀 NBA</span>
+          <span class="chip">⚾ MLB</span>
+          <span class="chip">🏒 NHL</span>
+          <span class="chip">⚽ Soccer</span>
+          <span class="chip">🏈 CFB</span>
+        </div>
+      </section>
+
+    </div>
   </main>
-  <script src="js/game.js"></script>
+
+  <footer class="site-footer">
+    <p>EBK · Elite Ball Knowledge &nbsp;·&nbsp; NFL data from
+       <a href="https://github.com/nflverse/nflverse-data">nflverse</a> (1999–2025)</p>
+  </footer>
+
 </body>
 </html>

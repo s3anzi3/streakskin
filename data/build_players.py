@@ -37,6 +37,9 @@ BASE_URL = (
     "https://github.com/nflverse/nflverse-data/releases/download/"
     "stats_player/stats_player_reg_{year}.csv"
 )
+PLAYERS_URL = (
+    "https://github.com/nflverse/nflverse-data/releases/download/players/players.csv"
+)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 RAW_DIR = os.path.join(HERE, "raw")
@@ -79,6 +82,50 @@ def fetch_season_csv(year):
     with open(cache, "w", encoding="utf-8") as f:
         f.write(text)
     return text
+
+
+def fetch_players_csv():
+    """Return the players.csv text (player bios: college, draft, etc.), cached."""
+    os.makedirs(RAW_DIR, exist_ok=True)
+    cache = os.path.join(RAW_DIR, "players.csv")
+    if os.path.exists(cache) and os.path.getsize(cache) > 0:
+        with open(cache, "r", encoding="utf-8") as f:
+            return f.read()
+    req = urllib.request.Request(PLAYERS_URL, headers={"User-Agent": "ebk/1.0"})
+    with urllib.request.urlopen(req, timeout=60) as resp:
+        text = resp.read().decode("utf-8")
+    with open(cache, "w", encoding="utf-8") as f:
+        f.write(text)
+    return text
+
+
+def to_int(raw):
+    n = to_num(raw)
+    return int(n) if n is not None else None
+
+
+def build_people(used_ids):
+    """Map player_id -> bio dict (college + draft) for the ids we actually use."""
+    try:
+        text = fetch_players_csv()
+    except Exception as exc:  # noqa: BLE001
+        print(f"  ! players.csv download failed ({exc}) — people map will be empty")
+        return {}
+    people = {}
+    reader = csv.DictReader(io.StringIO(text))
+    for row in reader:
+        pid = row.get("gsis_id")
+        if pid not in used_ids:
+            continue
+        college = (row.get("college_name") or "").strip()
+        people[pid] = {
+            "college": college,
+            "draftYear": to_int(row.get("draft_year")),
+            "draftRound": to_int(row.get("draft_round")),
+            "draftPick": to_int(row.get("draft_pick")),
+            "draftTeam": (row.get("draft_team") or "").strip(),
+        }
+    return people
 
 
 def to_num(raw):
@@ -152,6 +199,7 @@ def build():
 
             seen.add(key)
             record = {
+                "id": row.get("player_id") or "",
                 "name": row.get("player_display_name") or row.get("player_name"),
                 "pos": pos,
                 "season": int(row["season"]),
@@ -169,15 +217,20 @@ def build():
 
     players.sort(key=lambda r: (r["season"], r["name"]))
 
+    used_ids = {r["id"] for r in players if r["id"]}
+    people = build_people(used_ids)
+    print(f"  people (bio: college/draft) matched: {len(people):,}/{len(used_ids):,}")
+
     out = {
         "generated": date.today().isoformat(),
-        "source": "nflverse-data / stats_player_reg",
+        "source": "nflverse-data / stats_player_reg + players",
         "seasons": [start, end],
         "categories": [
             {"key": k, "label": lbl, "decimals": dec, "icon": icon}
             for k, lbl, dec, icon, _opp, _pos in CATEGORIES
         ],
         "players": players,
+        "people": people,
     }
 
     os.makedirs(os.path.dirname(OUT_PATH), exist_ok=True)

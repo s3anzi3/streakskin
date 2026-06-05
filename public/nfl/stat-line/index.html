@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0a0e1c" />
+  <meta name="description" content="Guess the Stat Line — name the player from a mystery season's numbers. An EBK game." />
+  <title>Guess the Stat Line · EBK</title>
+  <link rel="preconnect" href="https://static.www.nfl.com" crossorigin />
+  <link rel="stylesheet" href="/css/base.css" />
+  <link rel="stylesheet" href="/css/game-common.css" />
+</head>
+<body>
+  <div class="gpage">
+    <header class="gtop">
+      <a class="ghome" href="/">&larr; <b>EBK</b></a>
+      <p class="gtitle">Guess the Stat&nbsp;Line <small>· NFL</small></p>
+      <div class="gscore">
+        <div class="chip"><span class="k">Score</span><span class="v" id="score">0</span></div>
+        <div class="chip"><span class="k">Best</span><span class="v" id="best">0</span></div>
+      </div>
+    </header>
+
+    <main class="gwrap">
+      <p id="loading" class="muted center" role="status" aria-live="polite">Loading…</p>
+
+      <div id="game" hidden>
+        <div class="gcard">
+          <div class="center">
+            <span class="muted" id="pos-line">Skill player</span>
+            <div style="margin-top:8px"><span class="season-badge" id="season-badge">????</span></div>
+          </div>
+          <div class="statline" id="statline"></div>
+          <div class="center muted" id="team-line">Team: hidden</div>
+          <div class="center" style="margin-top:var(--sp-md)">
+            <button class="gbtn ghost" id="hint-btn" style="min-height:44px">Reveal a clue (−points)</button>
+          </div>
+        </div>
+
+        <div class="opt-list" id="options"></div>
+
+        <div class="banner" id="banner"></div>
+        <div class="player-reveal" id="reveal" hidden></div>
+        <div class="row-btns" id="next-row" hidden></div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/js/teams.js"></script>
+  <script src="/js/stat-line.js"></script>
+</body>
+</html>

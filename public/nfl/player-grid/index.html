@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0a0e1c" />
+  <meta name="description" content="Player Grid — name a player for every team/stat intersection. An EBK game." />
+  <title>Player Grid · EBK</title>
+  <link rel="stylesheet" href="/css/base.css" />
+  <link rel="stylesheet" href="/css/game-common.css" />
+</head>
+<body>
+  <div class="gpage">
+    <header class="gtop">
+      <a class="ghome" href="/">&larr; <b>EBK</b></a>
+      <p class="gtitle">Player Grid <small>· NFL</small></p>
+      <div class="gscore">
+        <div class="chip"><span class="k">Filled</span><span class="v" id="score">0</span></div>
+        <div class="chip"><span class="k">Best</span><span class="v" id="best">0</span></div>
+      </div>
+    </header>
+
+    <main class="gwrap">
+      <p id="loading" class="muted center" role="status" aria-live="polite">Loading…</p>
+
+      <div id="game" hidden class="grid-shell">
+        <p class="center muted" id="status-line" style="margin:0 0 var(--sp-md)">
+          Tap a square and name a player who fits both labels. One guess per square.
+        </p>
+        <div class="grid3" id="grid"></div>
+        <div class="banner" id="banner"></div>
+        <div class="row-btns" id="end-row" hidden></div>
+        <p class="center muted" style="font-size:var(--fs-xs);margin-top:var(--sp-md)">
+          Eligible if the player ever met that mark in a single season / played for that team (1999–2025).
+        </p>
+      </div>
+    </main>
+  </div>
+
+  <!-- guess modal -->
+  <div class="modal-back" id="modal" hidden>
+    <div class="modal">
+      <h3 id="m-title">Name a player</h3>
+      <p class="modal-sub" id="m-sub"></p>
+      <div class="ac-wrap">
+        <input class="ac-input" id="ac" placeholder="Type a player name…" autocomplete="off"
+               autocapitalize="off" autocorrect="off" spellcheck="false" />
+        <div class="ac-list" id="ac-list" hidden></div>
+      </div>
+      <p class="modal-sub" id="m-msg" style="color:var(--lower);min-height:1.2em;margin-top:8px"></p>
+      <div class="row-btns" style="margin-top:var(--sp-sm)">
+        <button class="gbtn ghost" id="m-cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/teams.js"></script>
+  <script src="/js/player-grid.js"></script>
+</body>
+</html>

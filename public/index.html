@@ -107,7 +107,7 @@
         NFL.franchises.forEach(function (f) {
           var a = document.createElement("a");
           a.className = "strip-logo";
-          a.href = "/nfl/team/?t=" + f.key;
+          a.href = "/nfl/team?t=" + f.key;
           a.title = f.name;
           if (pass === 1) a.setAttribute("aria-hidden", "true");
           var img = document.createElement("img");

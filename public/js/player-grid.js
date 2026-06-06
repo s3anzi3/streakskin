@@ -1,23 +1,48 @@
 /* EBK · Player Grid — immaculate-grid: name a player for each row×col criterion. */
 (() => {
   "use strict";
-  const BEST_KEY = "ebk_grid_best";
   const $ = (s, r = document) => r.querySelector(s);
 
-  const ACH = [
-    ["pass4000", "4,000+ Pass Yds", "passing_yards", 4000],
-    ["pass30",   "30+ Pass TD",     "passing_tds",   30],
-    ["rush1000", "1,000+ Rush Yds", "rushing_yards", 1000],
-    ["rush10",   "10+ Rush TD",     "rushing_tds",   10],
-    ["rec1000",  "1,000+ Rec Yds",  "receiving_yards", 1000],
-    ["rec100",   "100+ Catches",    "receptions",    100],
-    ["rec10",    "10+ Rec TD",      "receiving_tds", 10],
-    ["sack10",   "10+ Sacks",       "def_sacks",     10],
-    ["tk100",    "100+ Tackles",    "tackles",       100],
-    ["int5",     "5+ INT (season)", "def_interceptions", 5],
-    ["pd15",     "15+ Passes Def",  "def_pass_defended", 15],
-    ["ff4",      "4+ Forced Fum",   "def_fumbles_forced", 4],
-  ];
+  const SPORT = document.body.dataset.sport || "nfl";
+  const LEAGUE = window[SPORT.toUpperCase()] || window.NFL;
+  const DATA_URL = SPORT === "nfl" ? "/data/players.json" : "/data/" + SPORT + "/players.json";
+  const BEST_KEY = SPORT === "nfl" ? "ebk_grid_best" : "ebk_grid_" + SPORT + "_best";
+
+  const CFG = {
+    nfl: {
+      ach: [
+        ["pass4000", "4,000+ Pass Yds", "passing_yards", 4000],
+        ["pass30",   "30+ Pass TD",     "passing_tds",   30],
+        ["rush1000", "1,000+ Rush Yds", "rushing_yards", 1000],
+        ["rush10",   "10+ Rush TD",     "rushing_tds",   10],
+        ["rec1000",  "1,000+ Rec Yds",  "receiving_yards", 1000],
+        ["rec100",   "100+ Catches",    "receptions",    100],
+        ["rec10",    "10+ Rec TD",      "receiving_tds", 10],
+        ["sack10",   "10+ Sacks",       "def_sacks",     10],
+        ["tk100",    "100+ Tackles",    "tackles",       100],
+        ["int5",     "5+ INT (season)", "def_interceptions", 5],
+        ["pd15",     "15+ Passes Def",  "def_pass_defended", 15],
+        ["ff4",      "4+ Forced Fum",   "def_fumbles_forced", 4],
+      ],
+      positions: [["QB", "QB"], ["RB", "RB"], ["WR", "WR"], ["TE", "TE"],
+                  ["DL", "D-Line"], ["LB", "Linebacker"], ["DB", "Def. Back"]],
+      flags: [["r1", "1st-Rd Pick"], ["undrafted", "Undrafted"]],
+    },
+    nba: {
+      ach: [
+        ["p20",  "20+ PPG",      "ppg", 20],
+        ["p2k",  "2,000+ Points","pts", 2000],
+        ["r10",  "10+ RPG",      "rpg", 10],
+        ["a7",   "7+ APG",       "apg", 7],
+        ["t150", "150+ 3PM",     "tpm", 150],
+        ["b100", "100+ Blocks",  "blk", 100],
+        ["s120", "120+ Steals",  "stl", 120],
+      ],
+      positions: [["G", "Guard"], ["F", "Forward"], ["C", "Center"]],
+      flags: [],
+    },
+  }[SPORT];
+  const ACH = CFG.ach;
 
   const S = {
     R: [],            // roster: per-player attribute objects
@@ -36,7 +61,7 @@
 
   async function load() {
     try {
-      const res = await fetch("/data/players.json", { cache: "no-cache" });
+      const res = await fetch(DATA_URL, { cache: "no-cache" });
       if (!res.ok) throw new Error("HTTP " + res.status);
       const data = await res.json();
       buildRoster(data);
@@ -65,7 +90,7 @@
               min: p.season, max: p.season };
         byId.set(p.id, a);
       }
-      a.teams.add(NFL.keyOf(p.team));
+      a.teams.add(LEAGUE.keyOf(p.team));
       a.min = Math.min(a.min, p.season); a.max = Math.max(a.max, p.season);
       if (p.headshot && !a.headshot) a.headshot = p.headshot;
       for (const [key, , col, thr] of ACH) if ((p.stats[col] || 0) >= thr) a.ach.add(key);
@@ -77,13 +102,10 @@
 
   function buildCriteria() {
     const crit = [];
-    NFL.franchises.forEach((f) => crit.push({ type: "team", key: f.key, label: f.name }));
+    LEAGUE.franchises.forEach((f) => crit.push({ type: "team", key: f.key, label: f.name }));
     ACH.forEach(([key, label]) => crit.push({ type: "ach", key, label }));
-    [["QB", "QB"], ["RB", "RB"], ["WR", "WR"], ["TE", "TE"],
-     ["DL", "D-Line"], ["LB", "Linebacker"], ["DB", "Def. Back"]]
-      .forEach(([k, l]) => crit.push({ type: "pos", key: k, label: l }));
-    crit.push({ type: "flag", key: "r1", label: "1st-Rd Pick" });
-    crit.push({ type: "flag", key: "undrafted", label: "Undrafted" });
+    CFG.positions.forEach(([k, l]) => crit.push({ type: "pos", key: k, label: l }));
+    CFG.flags.forEach(([k, l]) => crit.push({ type: "flag", key: k, label: l }));
     // precompute satisfaction set (roster indices) for each criterion
     crit.forEach((c) => (c.set = new Set()));
     S.R.forEach((p, i) => crit.forEach((c) => { if (satisfies(p, c)) c.set.add(i); }));
@@ -144,7 +166,7 @@
 
   function critLabel(c) {
     if (c.type === "team")
-      return `<img class="gh-logo" src="${NFL.logo(c.key)}" alt="${c.label}" loading="lazy" />` +
+      return `<img class="gh-logo" src="${LEAGUE.logo(c.key)}" alt="${c.label}" loading="lazy" />` +
              `<span class="gh-name">${c.label}</span>`;
     return `<span class="gh-name">${c.label}</span>`;
   }
@@ -259,7 +281,7 @@
     flash(S.score === 9 ? "Immaculate! 9/9 🎉" : `You filled ${S.score}/9.`, S.score >= 5);
     const row = $("#end-row"); row.hidden = false; row.innerHTML = "";
     addBtn(row, "New grid", "primary", newGrid);
-    addBtn(row, "Back to EBK", "ghost", () => (location.href = "/"));
+    addBtn(row, "Back to EBK", "ghost", () => (location.href = "/" + SPORT));
   }
 
   function addBtn(row, label, kind, fn) {

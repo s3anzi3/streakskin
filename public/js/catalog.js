@@ -26,7 +26,7 @@ window.EBK = {
   // which game slugs are live per sport key
   live: {
     nfl: ["higher-lower", "stat-line", "career-path", "player-grid", "team"],
-    nba: ["higher-lower", "stat-line", "career-path", "team"],
+    nba: ["higher-lower", "stat-line", "career-path", "player-grid", "team"],
   },
 
   sport: function (key) { return this.sports.find(function (s) { return s.key === key; }); },

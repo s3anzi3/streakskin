@@ -3,9 +3,9 @@ window.EBK = {
   sports: [
     { key: "nfl",    name: "NFL",        emoji: "\u{1F3C8}", accent: "#3ddc97", status: "live", blurb: "Pro football, 1999–present." },
     { key: "cfb",    name: "College FB", emoji: "\u{1F3DF}️", accent: "#f4a300", status: "soon", blurb: "Saturdays in the fall." },
-    { key: "nba",    name: "NBA",        emoji: "\u{1F3C0}", accent: "#ff7a3c", status: "soon", blurb: "Pro basketball." },
-    { key: "mlb",    name: "MLB",        emoji: "⚾",    accent: "#4aa3ff", status: "soon", blurb: "America's pastime." },
-    { key: "nhl",    name: "NHL",        emoji: "\u{1F3D2}", accent: "#5fd0e6", status: "soon", blurb: "Pro hockey." },
+    { key: "nba",    name: "NBA",        emoji: "\u{1F3C0}", accent: "#ff7a3c", status: "live", blurb: "Pro basketball, 2002–2023." },
+    { key: "mlb",    name: "MLB",        emoji: "⚾",    accent: "#4aa3ff", status: "live", blurb: "America's pastime, 2000–2021." },
+    { key: "nhl",    name: "NHL",        emoji: "\u{1F3D2}", accent: "#5fd0e6", status: "live", blurb: "Pro hockey, 2000–2024." },
     { key: "soccer", name: "Soccer",     emoji: "⚽",    accent: "#8ee04a", status: "soon", blurb: "The world's game." },
   ],
 

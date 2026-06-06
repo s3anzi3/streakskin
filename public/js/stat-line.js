@@ -61,6 +61,18 @@
       notable: [["hr", 12], ["hits", 120], ["rbi", 60], ["runs", 60], ["sb", 20],
                 ["w", 8], ["k", 100], ["sv", 10]],
     },
+    nhl: {
+      yMin: 2001, yMax: 2024, seasonFmt: (y) => (y - 1) + "-" + String(y).slice(2),
+      display: [
+        ["g", "Goals"], ["a", "Assists"], ["pts", "Points"], ["plus", "Plus/Minus"],
+        ["shots", "Shots"], ["ppg_g", "PP Goals"], ["ppg", "Points/Game"],
+        ["w", "Wins"], ["sv", "Saves"], ["svpct", "Save %"], ["gaa", "GAA"], ["so", "Shutouts"],
+      ],
+      dec: { ppg: 1, svpct: 3, gaa: 2 },
+      posNames: { C: "Center", L: "Left Wing", R: "Right Wing", D: "Defense", G: "Goalie", F: "Forward" },
+      sides: { F: "skater", D: "skater", G: "goalie" },
+      notable: [["pts", 30], ["g", 15], ["a", 20], ["w", 15], ["sv", 600], ["so", 3]],
+    },
   }[SPORT];
 
   const fmt = (v, d = 0) => Number(v).toLocaleString("en-US", { maximumFractionDigits: d });

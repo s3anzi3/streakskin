@@ -43,6 +43,12 @@
       notable: [["hr", 12], ["hits", 120], ["rbi", 60], ["runs", 60], ["sb", 20],
                 ["w", 8], ["k", 100], ["sv", 10]],
     },
+    nhl: {
+      icon: "🏒", seasonFmt: (y) => (y - 1) + "-" + String(y).slice(2),
+      facts: ["position", "career", "teampath"],
+      posNames: { C: "Center", L: "Left Wing", R: "Right Wing", D: "Defense", G: "Goalie", F: "Forward" },
+      notable: [["pts", 30], ["g", 15], ["a", 20], ["w", 15], ["sv", 600], ["so", 3]],
+    },
   }[SPORT];
 
   const getBest = () => { try { return +localStorage.getItem(BEST_KEY) || 0; } catch { return 0; } };

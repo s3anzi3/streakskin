@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0a0e1c" />
+  <meta name="description" content="NHL Higher / Lower — guess if the next player-season is higher or lower. An EBK game." />
+  <title>NHL Higher / Lower · EBK</title>
+  <link rel="preconnect" href="https://a.espncdn.com" crossorigin />
+  <link rel="preconnect" href="https://assets.nhle.com" crossorigin />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <link rel="stylesheet" href="/css/base.css" />
+  <link rel="stylesheet" href="/css/styles.css" />
+  <script defer src="https://cdn.jsdelivr.net/npm/animejs@3.2.2/lib/anime.min.js"></script>
+</head>
+<body data-sport="nhl">
+  <main id="app">
+    <section id="screen-start" class="screen is-active" aria-label="Choose a stat">
+      <div class="start-inner">
+        <a class="home-link" href="/nhl">&larr; <b>NHL</b> arcade</a>
+        <h1 class="title">Higher <span>/</span> Lower</h1>
+        <p class="subtitle">NHL · pick a stat</p>
+        <p class="tagline">Call whether the next player-season is higher or lower on your chosen stat. Get it right and the streak rolls on. NHL seasons 2000–2024.</p>
+        <p id="loading" class="loading" role="status" aria-live="polite">Loading player data…</p>
+        <div id="category-grid" class="category-grid" hidden></div>
+        <p class="best-line">Best streak: <strong id="start-best">0</strong></p>
+        <p class="credit">Data: NHL stats API · 2000–2024</p>
+      </div>
+    </section>
+    <section id="screen-game" class="screen" aria-label="Game">
+      <header class="hud">
+        <button id="quit-btn" class="ghost-btn" aria-label="Back to stat select">&larr;</button>
+        <div class="hud-stat"><span class="hud-label">Streak</span><span id="streak" class="hud-value">0</span></div>
+        <div class="hud-cat" id="hud-cat"></div>
+        <div class="hud-stat"><span class="hud-label">Best</span><span id="best" class="hud-value">0</span></div>
+      </header>
+      <div class="panels">
+        <article class="panel anchor" id="panel-anchor">
+          <div class="panel-bg" aria-hidden="true"></div>
+          <div class="panel-body">
+            <div class="panel-photo"><img alt="" /></div>
+            <h2 class="panel-name"></h2><p class="panel-meta"></p>
+            <p class="panel-stat"><span class="panel-verb">had</span><span class="stat-value">0</span><span class="stat-label"></span></p>
+          </div>
+        </article>
+        <div class="divider"><span class="vs-badge">VS</span></div>
+        <article class="panel challenger" id="panel-challenger">
+          <div class="panel-bg" aria-hidden="true"></div>
+          <div class="panel-body">
+            <div class="panel-photo"><img alt="" /></div>
+            <h2 class="panel-name"></h2><p class="panel-meta"></p>
+            <div class="challenger-ask" id="ask">
+              <p class="ask-prompt">had <span class="hl-stat"></span></p>
+              <div class="guess-btns">
+                <button class="guess-btn higher" data-dir="higher">▲ Higher</button>
+                <button class="guess-btn lower" data-dir="lower">▼ Lower</button>
+              </div>
+            </div>
+            <p class="panel-stat reveal" id="challenger-reveal" aria-live="polite">
+              <span class="panel-verb">had</span><span class="stat-value">0</span><span class="stat-label"></span></p>
+          </div>
+        </article>
+      </div>
+      <div id="verdict" class="verdict" role="status" aria-live="assertive"></div>
+    </section>
+    <section id="screen-over" class="screen" aria-label="Game over">
+      <div class="over-inner">
+        <p id="new-best" class="new-best" hidden>🏆 New best!</p>
+        <h2 class="over-title">Streak ended</h2>
+        <p class="over-streak">You reached <strong id="final-streak">0</strong></p>
+        <p id="over-detail" class="over-detail"></p>
+        <div class="over-btns">
+          <button id="again-btn" class="primary-btn">Play again</button>
+          <button id="menu-btn" class="secondary-btn">Change stat</button>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script src="/js/nhl-teams.js"></script>
+  <script src="/js/game.js"></script>
+</body>
+</html>

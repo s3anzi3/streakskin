@@ -60,6 +60,17 @@
       flags: [],
       posKey: "pos",
     },
+    nhl: {
+      ach: [
+        ["g40", "40+ Goals", "g", 40], ["g30", "30+ Goals", "g", 30],
+        ["a50", "50+ Assists", "a", 50], ["p80", "80+ Points", "pts", 80],
+        ["p100", "100+ Points", "pts", 100], ["sh250", "250+ Shots", "shots", 250],
+        ["w35", "35+ Wins", "w", 35], ["so6", "6+ Shutouts", "so", 6],
+      ],
+      positions: [["F", "Forward"], ["D", "Defense"], ["G", "Goalie"]],
+      flags: [],
+      posKey: "grp",
+    },
   }[SPORT];
   const ACH = CFG.ach;
 

@@ -28,6 +28,7 @@ window.EBK = {
     nfl: ["higher-lower", "stat-line", "career-path", "player-grid", "team"],
     nba: ["higher-lower", "stat-line", "career-path", "player-grid", "team"],
     mlb: ["higher-lower", "stat-line", "career-path", "player-grid", "team"],
+    nhl: ["higher-lower", "stat-line", "career-path", "player-grid", "team"],
   },
 
   sport: function (key) { return this.sports.find(function (s) { return s.key === key; }); },

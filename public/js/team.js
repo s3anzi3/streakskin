@@ -60,6 +60,19 @@
         P: ["games", "w", "k", "sv", "era"],
       },
     },
+    nhl: {
+      seasons: "2000–2024",
+      groups: ["all", "F", "D", "G"],
+      labels: { games: "GP", g: "G", a: "A", pts: "P", plus: "+/-", shots: "S",
+                ppg_g: "PPG", ppg: "P/G", w: "W", sv: "SV", svpct: "SV%", gaa: "GAA", so: "SO" },
+      dec: { ppg: 1, svpct: 3, gaa: 2 },
+      colsets: {
+        all: ["games", "g", "a", "pts"],
+        F: ["games", "g", "a", "pts", "plus", "shots", "ppg_g"],
+        D: ["games", "g", "a", "pts", "plus", "shots"],
+        G: ["games", "w", "sv", "svpct", "gaa", "so"],
+      },
+    },
   }[SPORT];
 
   const S = { rows: [], teamKey: "", group: "all", from: 0, to: 9999, q: "",

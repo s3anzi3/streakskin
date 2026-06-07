@@ -69,6 +69,7 @@
     await EBKF.ready;
     name = (name || "").trim();
     var key = nameKeyOf(name);
+    if ((pw || "").length < 6) throw nameErr("ebk/weak-password", "Password must be at least 6 characters.");
     if (key.length < 2) throw nameErr("ebk/name-short", "Display name must be at least 2 characters.");
     if (/[\/.#$\[\]]/.test(key)) throw nameErr("ebk/name-invalid", "Display name has invalid characters.");
     // pre-check (avoids creating an account for an obviously-taken name)

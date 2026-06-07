@@ -57,6 +57,7 @@
   function doSubmit() {
     var email = emailF.value.trim(), pw = pwF.value, name = nameF.value.trim();
     if (!email || !pw) { errEl.textContent = "Email and password required."; return; }
+    if (mode === "up" && pw.length < 6) { errEl.textContent = "Password must be at least 6 characters."; return; }
     submitBtn.disabled = true; errEl.textContent = "…";
     var p = mode === "up" ? EBKF.signUp(email, pw, name || email.split("@")[0]) : EBKF.signIn(email, pw);
     p.then(closeModal).catch(function (e) { errEl.textContent = pretty(e); })
@@ -68,6 +69,7 @@
   }
   function pretty(e) {
     var c = (e && e.code) || "";
+    if (c === "ebk/weak-password") return "Password must be at least 6 characters.";
     if (c === "ebk/name-taken") return "That display name is taken — try another.";
     if (c === "ebk/name-short") return "Display name must be at least 2 characters.";
     if (c === "ebk/name-invalid") return "Display name can't contain / . # $ [ ].";

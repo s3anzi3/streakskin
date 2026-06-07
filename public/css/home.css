@@ -249,6 +249,14 @@ footer.site-footer {
 }
 footer.site-footer a { color: var(--accent); }
 
+/* responsive header — let the brand + nav stack cleanly on phones */
+@media (max-width: 560px) {
+  .site-header { flex-wrap: wrap; row-gap: 8px; }
+  .brand .brand-sub { display: none; }
+  .ebk-nav { width: 100%; margin-left: 0; justify-content: flex-start; }
+  .header-tag { margin-left: auto; }
+}
+
 /* entrance */
 @keyframes riseIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
 .rise { animation: riseIn var(--dur-slow) var(--ease) both; }

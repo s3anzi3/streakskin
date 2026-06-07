@@ -153,6 +153,24 @@ html, body { height: 100%; }
 .ghost-btn:hover { border-color: var(--accent); }
 .ghost-btn:active { transform: scale(0.92); }
 
+/* guess countdown bar (10s per round) */
+#screen-game { position: relative; }
+.hl-timer {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 5px;
+  z-index: 9;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+.hl-timer .fill {
+  height: 100%;
+  width: 100%;
+  background: var(--accent, #3ddc97);
+  border-radius: 0 3px 3px 0;
+}
+.hl-timer .fill.low { background: var(--lower, #ff5470); }
+
 /* ============================================================
    GAME — PANELS (vertical split, fills viewport)
    ============================================================ */

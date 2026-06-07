@@ -10,6 +10,7 @@
   (function () { if (!window.EBKF) { var s = document.createElement("script"); s.src = "/js/ebk-firebase.js"; document.head.appendChild(s); } })();
   const ebkRecord = (score) => { try { window.EBKF && EBKF.recordScore(SPORT, "higher-lower", score); } catch (e) {} };
   const REVEAL_PAUSE = 1100;            // ms to admire the reveal before advancing
+  const TIME_LIMIT = 10000;             // ms to make each higher/lower guess
   const $ = (sel, root = document) => root.querySelector(sel);
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const A = () => (reduceMotion ? null : window.anime); // anime.js if loaded & motion allowed
@@ -146,6 +147,62 @@
 
   const statValue = (p) => p.stats[state.category.key];
 
+  // ---- guess timer ----------------------------------------------------------
+
+  let timerTO = null, timerLowTO = null, timerEl = null;
+
+  function ensureTimer() {
+    if (timerEl) return timerEl;
+    const sg = $("#screen-game");
+    sg.style.position = "relative";
+    const wrap = document.createElement("div");
+    wrap.className = "hl-timer";
+    wrap.innerHTML = '<div class="fill"></div>';
+    sg.appendChild(wrap);
+    timerEl = wrap;
+    return wrap;
+  }
+
+  function startTimer() {
+    const fill = $(".fill", ensureTimer());
+    clearTimeout(timerTO); clearTimeout(timerLowTO);
+    fill.classList.remove("low");
+    fill.style.transition = "none";
+    fill.style.width = "100%";
+    void fill.offsetWidth;                       // flush so the transition restarts
+    fill.style.transition = `width ${TIME_LIMIT}ms linear`;
+    fill.style.width = "0%";
+    timerLowTO = setTimeout(() => { if (!state.locked) fill.classList.add("low"); }, TIME_LIMIT - 3000);
+    timerTO = setTimeout(timeUp, TIME_LIMIT);
+  }
+
+  function stopTimer() {
+    clearTimeout(timerTO); clearTimeout(timerLowTO);
+    if (!timerEl) return;
+    const fill = $(".fill", timerEl);
+    const w = getComputedStyle(fill).width;     // freeze at current position
+    fill.style.transition = "none";
+    fill.style.width = w;
+  }
+
+  function timeUp() {
+    if (state.locked) return;
+    state.locked = true;
+    stopTimer();
+    const c = statValue(state.challenger);
+    $("#ask").classList.add("hide");
+    const reveal = $("#challenger-reveal");
+    reveal.classList.add("show");
+    countTo($(".stat-value", reveal), c, state.category.decimals);
+    const panel = $("#panel-challenger");
+    panel.classList.add("result-wrong");
+    if (!reduceMotion) panel.classList.add("shake");
+    const verdict = $("#verdict");
+    verdict.textContent = "⏱ Time's up!";
+    verdict.className = "verdict bad show";
+    setTimeout(gameOver, REVEAL_PAUSE + 200);
+  }
+
   function fillPanel(sel, p, revealed) {
     const panel = $(sel);
     const dec = state.category.decimals;
@@ -195,11 +252,13 @@
         easing: "easeOutCubic",
       });
     }
+    startTimer();
   }
 
   function guess(direction) {
     if (state.locked) return;
     state.locked = true;
+    stopTimer();
 
     const a = statValue(state.anchor);
     const c = statValue(state.challenger);
@@ -260,6 +319,7 @@
   }
 
   function gameOver() {
+    stopTimer();
     ebkRecord(state.streak);
     const cat = state.category;
     const a = state.anchor, c = state.challenger;
@@ -290,7 +350,7 @@
   document.querySelectorAll(".guess-btn").forEach((b) =>
     b.addEventListener("click", () => guess(b.dataset.dir)));
   $("#again-btn").addEventListener("click", () => startRun(state.category));
-  const toMenu = () => { showScreen("screen-start"); buildCategoryGrid(); };
+  const toMenu = () => { stopTimer(); state.locked = true; showScreen("screen-start"); buildCategoryGrid(); };
   $("#menu-btn").addEventListener("click", toMenu);
   $("#quit-btn").addEventListener("click", toMenu);
 

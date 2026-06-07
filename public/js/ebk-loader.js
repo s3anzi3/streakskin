@@ -1,8 +1,41 @@
-/* EBK · branded preloader. Covers the page until assets finish loading, then
-   fades out. Shows once per browser session so internal navigation is instant. */
+/* EBK · preloader + scroll behavior (loaded in <head> on every page). */
 (function () {
   "use strict";
-  try { if (sessionStorage.getItem("ebk_seen")) return; } catch (e) {}
+
+  // ---------- scroll behavior ----------
+  // Lock page scroll when the content fits the viewport on desktop; allow
+  // scrolling on mobile, on touch, or whenever content is taller than the
+  // viewport (so nothing is ever unreachable).
+  function applyScroll() {
+    var el = document.documentElement;
+    var mobile = window.matchMedia("(max-width: 820px)").matches ||
+                 window.matchMedia("(pointer: coarse)").matches;
+    var desired;
+    if (mobile) {
+      desired = "";
+    } else {
+      var content = Math.max(el.scrollHeight, document.body ? document.body.scrollHeight : 0);
+      desired = content > window.innerHeight + 1 ? "auto" : "hidden";
+    }
+    if (el.style.overflowY !== desired) el.style.overflowY = desired;
+  }
+  function initScroll() {
+    applyScroll();
+    window.addEventListener("resize", applyScroll);
+    window.addEventListener("load", applyScroll);
+    if (window.ResizeObserver && document.body) {
+      try { new ResizeObserver(applyScroll).observe(document.body); } catch (e) { setInterval(applyScroll, 1200); }
+    } else {
+      setInterval(applyScroll, 1200);
+    }
+  }
+  if (document.body) initScroll();
+  else document.addEventListener("DOMContentLoaded", initScroll);
+
+  // ---------- branded preloader (once per session) ----------
+  var seen = false;
+  try { seen = !!sessionStorage.getItem("ebk_seen"); } catch (e) {}
+  if (seen) return;
 
   var MIN = 500, MAX = 7000, start = Date.now();
   var css =
@@ -45,8 +78,7 @@
       setTimeout(function () { if (o.parentNode) o.parentNode.removeChild(o); }, 500);
     }, wait);
   }
-
   if (document.readyState === "complete") hide();
   else window.addEventListener("load", hide);
-  setTimeout(hide, MAX); // safety net
+  setTimeout(hide, MAX);
 })();

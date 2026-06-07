@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0a0e1c" />
+  <meta name="description" content="Pick a college team to study — every player-season, filterable and sortable. EBK." />
+  <title>CFB Teams · EBK</title>
+  <link rel="preconnect" href="https://a.espncdn.com" crossorigin />
+  <link rel="stylesheet" href="/css/base.css" />
+  <link rel="stylesheet" href="/css/home.css" />
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="/">
+      <span class="wordmark" aria-label="EBK">E<span>B</span>K</span>
+      <span class="brand-sub">Elite Ball Knowledge</span>
+    </a>
+    <a class="header-tag" href="/cfb">← CFB</a>
+  </header>
+  <main>
+    <section class="hero wrap" style="padding-bottom: var(--sp-md)">
+      <h1 class="rise">🏈 Team Study</h1>
+      <p class="rise d1">Pick a school to browse, filter and sort every player-season in the EBK pool.</p>
+    </section>
+    <div class="wrap"><div class="team-grid" id="team-grid"></div></div>
+  </main>
+  <script src="/js/cfb-teams.js"></script>
+  <script>
+    (function () {
+      var grid = document.getElementById("team-grid");
+      if (!grid || !window.CFB) return;
+      CFB.franchises.slice().sort(function (a, b) { return a.name.localeCompare(b.name); })
+        .forEach(function (f) {
+          var a = document.createElement("a");
+          a.className = "team-tile";
+          a.href = "/cfb/team?t=" + encodeURIComponent(f.key);
+          a.innerHTML = '<img src="' + f.logo + '" alt="" loading="lazy" />' +
+                        '<span>' + f.name + "</span>";
+          grid.appendChild(a);
+        });
+    })();
+  </script>
+</body>
+</html>

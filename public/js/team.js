@@ -73,6 +73,23 @@
         G: ["games", "w", "sv", "svpct", "gaa", "so"],
       },
     },
+    cfb: {
+      seasons: "2014–2024",
+      groups: ["all", "QB", "RB", "WR", "TE", "DL", "LB", "DB"],
+      labels: { pyd: "PsYd", ptd: "PsTD", pint: "INT", ryd: "RuYd", rtd: "RuTD", car: "Car",
+                recyd: "RcYd", rec: "Rec", rectd: "RcTD", tkl: "Tkl", sk: "Sk", tfl: "TFL" },
+      dec: { sk: 1 },
+      colsets: {
+        all: ["pyd", "ryd", "recyd", "tkl"],
+        QB: ["pyd", "ptd", "pint", "ryd", "rtd"],
+        RB: ["ryd", "rtd", "car", "rec", "recyd"],
+        WR: ["rec", "recyd", "rectd", "ryd"],
+        TE: ["rec", "recyd", "rectd"],
+        DL: ["tkl", "sk", "tfl"],
+        LB: ["tkl", "sk", "tfl"],
+        DB: ["tkl", "tfl", "sk"],
+      },
+    },
   }[SPORT];
 
   const S = { rows: [], teamKey: "", group: "all", from: 0, to: 9999, q: "",

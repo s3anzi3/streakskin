@@ -73,6 +73,24 @@
       sides: { F: "skater", D: "skater", G: "goalie" },
       notable: [["pts", 30], ["g", 15], ["a", 20], ["w", 15], ["sv", 600], ["so", 3]],
     },
+    cfb: {
+      yMin: 2014, yMax: 2024, seasonFmt: (y) => String(y),
+      display: [
+        ["pyd", "Pass Yds"], ["ptd", "Pass TD"], ["pint", "Interceptions"],
+        ["ryd", "Rush Yds"], ["rtd", "Rush TD"], ["car", "Carries"],
+        ["recyd", "Rec Yds"], ["rec", "Receptions"], ["rectd", "Rec TD"],
+        ["tkl", "Tackles"], ["sk", "Sacks"], ["tfl", "Tackles for Loss"],
+      ],
+      dec: { sk: 1 },
+      posNames: { QB: "Quarterback", RB: "Running Back", FB: "Fullback", WR: "Wide Receiver",
+                  TE: "Tight End", DL: "Defensive Line", DE: "Defensive End", DT: "Defensive Tackle",
+                  LB: "Linebacker", OLB: "Outside Linebacker", ILB: "Inside Linebacker",
+                  CB: "Cornerback", S: "Safety", SS: "Strong Safety", FS: "Free Safety",
+                  DB: "Defensive Back", ATH: "Athlete" },
+      sides: { QB: "off", RB: "off", WR: "off", TE: "off", DL: "def", LB: "def", DB: "def", ATH: "off" },
+      notable: [["pyd", 1500], ["ptd", 12], ["ryd", 600], ["rtd", 8], ["recyd", 600],
+                ["rec", 40], ["rectd", 6], ["tkl", 60], ["sk", 6]],
+    },
   }[SPORT];
 
   const fmt = (v, d = 0) => Number(v).toLocaleString("en-US", { maximumFractionDigits: d });

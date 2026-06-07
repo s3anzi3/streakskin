@@ -49,6 +49,17 @@
       posNames: { C: "Center", L: "Left Wing", R: "Right Wing", D: "Defense", G: "Goalie", F: "Forward" },
       notable: [["pts", 30], ["g", 15], ["a", 20], ["w", 15], ["sv", 600], ["so", 3]],
     },
+    cfb: {
+      icon: "🏈", seasonFmt: (y) => String(y),
+      facts: ["position", "career", "teampath"],
+      posNames: { QB: "Quarterback", RB: "Running Back", FB: "Fullback", WR: "Wide Receiver",
+                  TE: "Tight End", DL: "Defensive Line", DE: "Defensive End", DT: "Defensive Tackle",
+                  LB: "Linebacker", OLB: "Outside Linebacker", ILB: "Inside Linebacker",
+                  CB: "Cornerback", S: "Safety", SS: "Strong Safety", FS: "Free Safety",
+                  DB: "Defensive Back", ATH: "Athlete" },
+      notable: [["pyd", 1500], ["ptd", 12], ["ryd", 600], ["rtd", 8], ["recyd", 600],
+                ["rec", 40], ["rectd", 6], ["tkl", 60], ["sk", 6]],
+    },
   }[SPORT];
 
   const getBest = () => { try { return +localStorage.getItem(BEST_KEY) || 0; } catch { return 0; } };

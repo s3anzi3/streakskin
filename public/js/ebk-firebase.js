@@ -57,6 +57,25 @@
   function nameErr(code, msg) { var e = new Error(msg); e.code = code; return e; }
   function nameKeyOf(name) { return (name || "").trim().toLowerCase(); }
 
+  // profanity / slur filter (client-side). Normalizes leetspeak + strips
+  // separators so "sh1t", "f.u.c.k", "f@g" are caught. List favors clearly
+  // offensive terms to avoid false-positives on normal names.
+  var BAD_WORDS = [
+    "fuck", "motherfuck", "shit", "bullshit", "bitch", "bastard", "asshole",
+    "cunt", "pussy", "slut", "whore", "cock", "wank", "twat", "prick", "bollock",
+    "nigger", "nigga", "faggot", "retard", "spic", "chink", "kike", "wetback",
+    "tranny", "dyke", "coon", "nazi", "hitler", "rapist", "rape", "pedo",
+    "molest", "porn", "jizz", "dildo",
+  ];
+  function nameClean(name) {
+    var map = { "0": "o", "1": "i", "3": "e", "4": "a", "5": "s", "7": "t", "@": "a", "$": "s", "!": "i", "|": "i" };
+    var s = String(name).toLowerCase()
+      .replace(/[013457@$!|]/g, function (c) { return map[c] || c; })
+      .replace(/[^a-z]/g, "");
+    for (var i = 0; i < BAD_WORDS.length; i++) if (s.indexOf(BAD_WORDS[i]) > -1) return false;
+    return true;
+  }
+
   EBKF.nameAvailable = async function (name) {
     await EBKF.ready;
     var key = nameKeyOf(name);
@@ -72,6 +91,7 @@
     if ((pw || "").length < 6) throw nameErr("ebk/weak-password", "Password must be at least 6 characters.");
     if (key.length < 2) throw nameErr("ebk/name-short", "Display name must be at least 2 characters.");
     if (/[\/.#$\[\]]/.test(key)) throw nameErr("ebk/name-invalid", "Display name has invalid characters.");
+    if (!nameClean(name)) throw nameErr("ebk/name-profane", "Please choose a different display name.");
     // pre-check (avoids creating an account for an obviously-taken name)
     if ((await EBKF.db.collection("usernames").doc(key).get()).exists)
       throw nameErr("ebk/name-taken", "That display name is taken.");

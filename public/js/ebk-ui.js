@@ -85,6 +85,7 @@
   function pretty(e) {
     var c = (e && e.code) || "";
     if (c === "ebk/weak-password") return "Password must be at least 6 characters.";
+    if (c === "ebk/name-profane") return "Please choose a cleaner display name.";
     if (c === "ebk/name-taken") return "That display name is taken — try another.";
     if (c === "ebk/name-short") return "Display name must be at least 2 characters.";
     if (c === "ebk/name-invalid") return "Display name can't contain / . # $ [ ].";

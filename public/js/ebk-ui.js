@@ -28,8 +28,6 @@
     '<input class="ebk-field" id="ebk-pw" type="password" placeholder="Password" autocomplete="current-password" />' +
     '<div class="ebk-err" id="ebk-err"></div>' +
     '<button class="ebk-btn" data-act="submit">Sign in</button>' +
-    '<p class="ebk-or">or</p>' +
-    '<button class="ebk-btn ebk-google" data-act="google">Continue with Google</button>' +
     '</div>';
   document.body.appendChild(modal);
 

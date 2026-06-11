@@ -7,6 +7,8 @@
   <meta name="theme-color" content="#0a0e1c" />
   <meta name="description" content="Your EBK dashboard — games played, streaks, best scores and top sport." />
   <title>Your Dashboard · EBK</title>
+  <link rel="icon" type="image/svg+xml" href="/img/icon.svg" />
+  <link rel="icon" type="image/x-icon" href="/favicon.ico" sizes="32x32" />
   <link rel="stylesheet" href="/css/base.css" />
   <link rel="stylesheet" href="/css/home.css" />
   <link rel="stylesheet" href="/css/team.css" />
@@ -40,11 +42,38 @@
           <tbody id="gametable"></tbody></table>
         </div>
         <p id="empty" class="muted center" hidden style="padding:var(--sp-lg)">No games yet — go play and your stats will appear here.</p>
+
+        <h2 class="dash-h">Account</h2>
+        <div class="acct-box">
+          <div class="acct-row">
+            <div>
+              <div class="acct-k">Display name</div>
+              <div class="acct-v" id="acct-name"></div>
+            </div>
+            <button class="chip-btn" id="acct-rename">Change name</button>
+          </div>
+          <div class="acct-row">
+            <div>
+              <div class="acct-k">Email</div>
+              <div class="acct-v" id="acct-email"></div>
+            </div>
+            <button class="chip-btn" id="acct-verify" hidden>Resend verification</button>
+          </div>
+          <div class="acct-row danger">
+            <div>
+              <div class="acct-k">Delete account</div>
+              <div class="acct-v muted">Removes your account, scores and leaderboard entries. Permanent.</div>
+            </div>
+            <button class="chip-btn danger" id="acct-delete">Delete…</button>
+          </div>
+          <p class="muted" id="acct-msg" style="min-height:1.2em;font-size:var(--fs-sm)"></p>
+        </div>
       </div>
     </div>
   </main>
   <script src="/js/catalog.js"></script>
   <script src="/js/ebk-ui.js"></script>
   <script src="/js/dashboard.js"></script>
+  <script src="/js/ebk-sound.js"></script>
 </body>
 </html>

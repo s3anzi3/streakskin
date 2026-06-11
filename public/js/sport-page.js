@@ -8,6 +8,11 @@
   if (S.accent) document.documentElement.style.setProperty("--accent", S.accent);
   document.title = S.name + " · EBK";
 
+  // league-flavored sting on the visitor's first tap/click (autoplay-safe)
+  document.addEventListener("pointerdown", function () {
+    setTimeout(function () { try { window.EBKS && EBKS.jingle(key); } catch (e) {} }, 60);
+  }, { once: true, passive: true });
+
   var titleEl = document.getElementById("sport-title");
   var tagEl = document.getElementById("sport-tag");
   var grid = document.getElementById("games");

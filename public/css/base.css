@@ -14,6 +14,8 @@
   --line: rgba(255, 255, 255, 0.10);
   --accent: #3ddc97;
   --accent-ink: #06251a;
+  --accent-2: #5b7cff;   /* secondary: indigo — cool counterpoint to the green */
+  --pop: #a855f7;        /* tertiary: violet — sparing highlights only */
   --higher: #3ddc97;
   --lower: #ff5d6c;
   --gold: #ffd166;
@@ -63,7 +65,14 @@ body {
   min-height: 100dvh;
   font-family: "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
   color: var(--text);
-  background: radial-gradient(120% 80% at 50% -20%, var(--bg-2), var(--bg) 60%) fixed;
+  /* layered color glows over the navy base: cool indigo top-right, violet
+     left, sport accent low-center — depth without hurting text contrast */
+  background:
+    radial-gradient(55% 42% at 88% -8%, color-mix(in srgb, var(--accent-2) 16%, transparent), transparent 70%),
+    radial-gradient(45% 38% at -8% 28%, color-mix(in srgb, var(--pop) 10%, transparent), transparent 70%),
+    radial-gradient(70% 50% at 50% 115%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 70%),
+    radial-gradient(120% 80% at 50% -20%, var(--bg-2), var(--bg) 60%);
+  background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   overscroll-behavior: none;
@@ -82,13 +91,67 @@ button { font-family: inherit; }
 /* small inline team logo (used across all pages/games) */
 .tlogo { width: 18px; height: 18px; object-fit: contain; vertical-align: -4px; }
 
-/* shared wordmark (EBK) */
+/* shared wordmark (EBK) — the B rides on a ball that takes the skin of the
+   sport you're browsing (body[data-sport]) */
 .wordmark {
   font-weight: 900;
   letter-spacing: -0.02em;
   line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.06em;
 }
-.wordmark span { color: var(--accent); }
+.wordmark span {
+  display: inline-grid;
+  place-items: center;
+  width: 1.18em; height: 1.18em;
+  border-radius: 50%;
+  font-size: 0.78em;
+  color: #06251a;
+  background: radial-gradient(circle at 35% 28%, #6cf0ba, #1f9e69 75%);
+  box-shadow: inset -2px -3px 5px rgba(0, 0, 0, 0.35), 0 2px 6px rgba(0, 0, 0, 0.45);
+}
+/* football (NFL + college): pigskin + white lace */
+body[data-sport="nfl"] .wordmark span,
+body[data-sport="cfb"] .wordmark span {
+  color: #fff;
+  background:
+    repeating-linear-gradient(90deg, #fff 0 1.5px, transparent 1.5px 4.5px) center / 58% 2px no-repeat,
+    radial-gradient(circle at 35% 28%, #b46a36, #6d3a16 75%);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+/* basketball: orange + seams */
+body[data-sport="nba"] .wordmark span {
+  color: #fff;
+  background:
+    linear-gradient(90deg, transparent calc(50% - 0.5px), rgba(20, 14, 8, 0.85) calc(50% - 0.5px) calc(50% + 0.5px), transparent calc(50% + 0.5px)),
+    linear-gradient(0deg, transparent calc(50% - 0.5px), rgba(20, 14, 8, 0.85) calc(50% - 0.5px) calc(50% + 0.5px), transparent calc(50% + 0.5px)),
+    radial-gradient(circle at 35% 28%, #f49b54, #c2571a 75%);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+/* baseball: white + red stitches */
+body[data-sport="mlb"] .wordmark span {
+  color: #0a0e1c;
+  background:
+    repeating-linear-gradient(65deg, transparent 0 3px, #d33c4e 3px 4px) left 18% center / 12% 100% no-repeat,
+    repeating-linear-gradient(115deg, transparent 0 3px, #d33c4e 3px 4px) right 18% center / 12% 100% no-repeat,
+    radial-gradient(circle at 35% 28%, #ffffff, #c9d2e8 80%);
+}
+/* hockey puck */
+body[data-sport="nhl"] .wordmark span {
+  color: #fff;
+  background: radial-gradient(circle at 35% 28%, #353b4d, #04060c 78%);
+  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.18), inset -2px -3px 5px rgba(0, 0, 0, 0.6), 0 2px 6px rgba(0, 0, 0, 0.45);
+}
+/* soccer ball: white panels */
+body[data-sport="soccer"] .wordmark span {
+  color: #0a0e1c;
+  background:
+    radial-gradient(circle at 22% 75%, rgba(10, 14, 28, 0.5) 0 12%, transparent 13%),
+    radial-gradient(circle at 78% 75%, rgba(10, 14, 28, 0.5) 0 12%, transparent 13%),
+    radial-gradient(circle at 50% 12%, rgba(10, 14, 28, 0.5) 0 12%, transparent 13%),
+    radial-gradient(circle at 35% 28%, #ffffff, #c2cce6 80%);
+}
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

@@ -13,8 +13,9 @@
   const BEST_KEY = SPORT === "nfl" ? "ebk_careerpath_best_v2" : "ebk_careerpath_" + SPORT + "_best";
   (function () { if (!window.EBKF) { var s = document.createElement("script"); s.src = "/js/ebk-firebase.js"; document.head.appendChild(s); } })();
   const ebkRecord = (score) => { try { window.EBKF && EBKF.recordScore(SPORT, "career-path", score); } catch (e) {} };
+  const sfx = (n) => { try { window.EBKS && EBKS.play(n); } catch (e) {} };
   const REVEALS = 5;
-  const ROUND_MS = 20000;               // per-round clock; timeout ends the run
+  const ROUND_MS = 7000;                // per-round clock; timeout ends the run
 
   // ---- round timer ----
   let rtTO = null, rtLowTO = null, rtEl = null;
@@ -35,7 +36,7 @@
     void fill.offsetWidth;
     fill.style.transition = `width ${ROUND_MS}ms linear`;
     fill.style.width = "0%";
-    rtLowTO = setTimeout(() => { if (!S.solved) fill.classList.add("low"); }, ROUND_MS - 5000);
+    rtLowTO = setTimeout(() => { if (!S.solved) fill.classList.add("low"); }, ROUND_MS - 2500);
     rtTO = setTimeout(timeUp, ROUND_MS);
   }
   function rtStop() {
@@ -51,6 +52,7 @@
     S.solved = true;
     S.wrongId = null;
     rtStop();
+    sfx("timeout");
     ebkRecord(S.score);
     render();                                  // disables options, highlights answer
     const banner = $("#banner");
@@ -280,6 +282,7 @@
     const correct = id === c.id;
     S.wrongId = correct ? null : id;
     render();
+    sfx(correct ? "correct" : "wrong");
     const banner = $("#banner");
     if (correct) {
       S.score += 1;

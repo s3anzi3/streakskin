@@ -13,10 +13,11 @@
       var g = groups[k];
       var reasons = g.reasons.filter(Boolean);
       var rename = g.uid ? '<button class="hero-cta rename" data-uid="' + esc(g.uid) + '" data-name="' + esc(g.name || "") + '">Change name</button>' : "";
+      var wipe = g.uid ? '<button class="ebk-signin wipe" data-uid="' + esc(g.uid) + '" data-name="' + esc(g.name || "") + '">Wipe scores</button>' : "";
       return '<div class="rep-card"><h3>' + esc(g.name || "(unknown)") +
         ' <span class="cnt">' + g.count + " report" + (g.count > 1 ? "s" : "") + "</span></h3>" +
         (reasons.length ? '<div class="reasons">“' + reasons.map(esc).join("” · “") + "”</div>" : "") +
-        '<div class="acts">' + rename +
+        '<div class="acts">' + rename + wipe +
         '<button class="ebk-signin dismiss" data-uid="' + esc(g.uid) + '" data-name="' + esc(g.name || "") + '">Dismiss</button>' +
         "</div></div>";
     }).join("");
@@ -53,6 +54,13 @@
       if (!confirm("Dismiss all reports for “" + (dm.dataset.name || "this name") + "”?")) return;
       EBKF.dismissReports(dm.dataset.uid || ("name:" + dm.dataset.name)).then(load)
         .catch(function () { alert("Couldn't dismiss reports."); });
+    }
+    var wp = e.target.closest && e.target.closest(".wipe");
+    if (wp) {
+      if (!confirm("Wipe ALL leaderboard scores + totals for “" + (wp.dataset.name || "this user") + "”? (For cheaters — can't be undone.)")) return;
+      EBKF.adminWipeScores(wp.dataset.uid)
+        .then(function () { alert("Scores wiped."); })
+        .catch(function (err) { alert("Couldn't wipe: " + (err && err.message || err)); });
     }
   });
 

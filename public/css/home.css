@@ -41,7 +41,12 @@
   max-width: 16ch;
   font-weight: 900;
 }
-.hero h1 .accent { color: var(--accent); }
+.hero h1 .accent {
+  background: linear-gradient(100deg, var(--accent), #6ee8ff 90%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
 .hero p {
   color: var(--muted);
   font-size: var(--fs-md);
@@ -53,13 +58,13 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: var(--accent);
+  background: linear-gradient(120deg, var(--accent), color-mix(in srgb, var(--accent) 55%, var(--accent-2)));
   color: var(--accent-ink);
   font-weight: 800;
   font-size: var(--fs-md);
   padding: 14px 26px;
   border-radius: 14px;
-  box-shadow: var(--elev-2);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--accent) 35%, transparent), var(--elev-2);
   transition: transform var(--dur-fast) var(--ease), filter var(--dur-fast) var(--ease);
 }
 .hero-cta:hover { transform: translateY(-2px); filter: brightness(1.07); }
@@ -284,7 +289,18 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: radial-gradient(120% 90% at 100% 0%, rgba(61,220,151,0.16), transparent 60%);
+  background: radial-gradient(120% 90% at 100% 0%, color-mix(in srgb, var(--accent) 17%, transparent), transparent 60%);
+  pointer-events: none;
+}
+.game-card.live:hover { box-shadow: 0 12px 32px color-mix(in srgb, var(--accent) 22%, transparent); }
+/* colored top edge keyed to each card's accent */
+.game-card.live::after {
+  content: "";
+  position: absolute;
+  top: 0; left: 14px; right: 14px; height: 2px;
+  border-radius: 0 0 4px 4px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  opacity: 0.7;
   pointer-events: none;
 }
 .game-card.soon { opacity: 0.62; }

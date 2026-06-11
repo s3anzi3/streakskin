@@ -9,6 +9,7 @@
   const BEST_KEY = SPORT === "nfl" ? "ebk_best" : "ebk_" + SPORT + "_best";
   (function () { if (!window.EBKF) { var s = document.createElement("script"); s.src = "/js/ebk-firebase.js"; document.head.appendChild(s); } })();
   const ebkRecord = (score) => { try { window.EBKF && EBKF.recordScore(SPORT, "higher-lower", score); } catch (e) {} };
+  const sfx = (n) => { try { window.EBKS && EBKS.play(n); } catch (e) {} };
   const REVEAL_PAUSE = 1100;            // ms to admire the reveal before advancing
   const TIME_LIMIT = 7000;              // ms to make each higher/lower guess
   const $ = (sel, root = document) => root.querySelector(sel);
@@ -172,12 +173,11 @@
 
   function ensureTimer() {
     if (timerEl) return timerEl;
-    const sg = $("#screen-game");
-    sg.style.position = "relative";
+    const host = $("#screen-game .divider") || $("#screen-game");
     const wrap = document.createElement("div");
     wrap.className = "hl-timer";
     wrap.innerHTML = '<div class="fill"></div>';
-    sg.appendChild(wrap);
+    host.appendChild(wrap);
     timerEl = wrap;
     return wrap;
   }
@@ -216,6 +216,7 @@
     const panel = $("#panel-challenger");
     panel.classList.add("result-wrong");
     if (!reduceMotion) panel.classList.add("shake");
+    sfx("timeout");
     const verdict = $("#verdict");
     verdict.textContent = "⏱ Time's up!";
     verdict.className = "verdict bad show";
@@ -300,6 +301,7 @@
     if (correct) {
       state.streak += 1;
       bumpStreak();
+      sfx("correct");
       // pick + preload the next challenger during the reveal pause
       state.next = pickChallenger(state.challenger);
       state.nextReady = preloadPlayer(state.next);
@@ -308,6 +310,7 @@
       setTimeout(advance, REVEAL_PAUSE);
     } else {
       if (!reduceMotion) panel.classList.add("shake");
+      sfx("wrong");
       verdict.textContent = "Wrong!";
       verdict.className = "verdict bad show";
       setTimeout(gameOver, REVEAL_PAUSE + 200);
@@ -352,8 +355,10 @@
     const cat = state.category;
     const a = state.anchor, c = state.challenger;
     $("#final-streak").textContent = state.streak;
-    $("#new-best").hidden = !(state.streak > 0 && state.streak === state.best &&
-                              state.streak === getBest(cat.key));
+    const isNewBest = state.streak > 0 && state.streak === state.best &&
+                      state.streak === getBest(cat.key);
+    sfx(isNewBest ? "best" : "over");
+    $("#new-best").hidden = !isNewBest;
     $("#over-detail").innerHTML =
       `<strong>${c.name}</strong> (${c.seasonLabel || c.season}) had ` +
       `<strong>${fmt(statValue(c), cat.decimals)}</strong> ${cat.label.toLowerCase()} — ` +

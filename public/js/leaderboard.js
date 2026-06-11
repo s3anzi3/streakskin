@@ -43,9 +43,11 @@
     var rep = mine ? "" : ' <button class="rep-btn" title="Report name" data-uid="' +
       esc(r.uid || "") + '" data-name="' + esc(r.name || "") + '">⚑</button>';
     var v = valueOf(r);
-    return "<tr" + (mine ? ' style="background:rgba(61,220,151,0.12)"' : "") + "><td>" + (i + 1) +
-      '</td><td class="pname">' + esc(r.name || "Player") + rep +
-      "</td><td>" + (v != null ? Number(v).toLocaleString() : "—") +
+    var medal = ["🥇", "🥈", "🥉"][i];
+    return "<tr" + (mine ? ' class="me"' : "") +
+      '><td class="rank' + (medal ? " medal" : "") + '">' + (medal || (i + 1)) +
+      '</td><td class="pname">' + esc(r.name || "Player") + (mine ? " <small>(you)</small>" : "") + rep +
+      '</td><td class="metric">' + (v != null ? Number(v).toLocaleString() : "—") +
       "</td><td>" + (r.plays || 0) + "</td></tr>";
   }
 

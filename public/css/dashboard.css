@@ -12,3 +12,23 @@
 .sportcard .em { font-size: 1.6rem; }
 .sportcard .nm { font-weight: 800; }
 .sportcard .mt { color: var(--muted); font-size: var(--fs-xs); }
+
+/* account management */
+.acct-box {
+  border: 1px solid var(--line); border-radius: 16px;
+  background: var(--glass); padding: var(--sp-md);
+  margin-bottom: var(--sp-xl);
+}
+.acct-row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--sp-md); padding: 12px 0; border-bottom: 1px solid var(--line);
+}
+.acct-row:last-of-type { border-bottom: none; }
+.acct-k { font-size: var(--fs-xs); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.acct-v { font-weight: 700; }
+.acct-row.danger .acct-k { color: var(--lower); }
+.chip-btn.danger { border-color: rgba(255, 93, 108, 0.5); color: var(--lower); }
+.chip-btn.danger:hover { background: rgba(255, 93, 108, 0.15); border-color: var(--lower); }
+.acct-badge { font-size: var(--fs-xs); font-weight: 800; padding: 2px 8px; border-radius: 999px; margin-left: 8px; }
+.acct-badge.ok { background: rgba(61, 220, 151, 0.15); color: var(--accent); }
+.acct-badge.warn { background: rgba(255, 209, 102, 0.15); color: var(--gold); }

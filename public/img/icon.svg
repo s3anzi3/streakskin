@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1b2547"/>
+      <stop offset="1" stop-color="#0a0e1c"/>
+    </linearGradient>
+    <linearGradient id="b" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5ff0b0"/>
+      <stop offset="1" stop-color="#2bb87c"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#bg)"/>
+  <rect x="1" y="1" width="62" height="62" rx="13" fill="none" stroke="#3ddc97" stroke-opacity="0.35" stroke-width="2"/>
+  <g font-family="Arial, 'Segoe UI', system-ui, sans-serif" font-weight="900" font-size="30"
+     text-anchor="middle" transform="skewX(-6)">
+    <text x="16" y="42" fill="#f3f6ff">E</text>
+    <text x="36" y="42" fill="url(#b)">B</text>
+    <text x="56" y="42" fill="#f3f6ff">K</text>
+  </g>
+  <path d="M12 50 Q32 56 52 50" fill="none" stroke="url(#b)" stroke-width="3" stroke-linecap="round"/>
+</svg>

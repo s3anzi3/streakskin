@@ -2,6 +2,19 @@
 (function () {
   "use strict";
 
+  // ---------- per-sport accent ----------
+  // Every page with <body data-sport> takes its league's accent color, so
+  // game screens (timers, buttons, glows) match the sport you're playing.
+  var ACCENTS = { nfl: "#3ddc97", cfb: "#f4a300", nba: "#ff7a3c",
+                  mlb: "#4aa3ff", nhl: "#5fd0e6", soccer: "#8ee04a" };
+  function applyAccent() {
+    var sport = document.body && document.body.dataset.sport;
+    var a = sport && ACCENTS[sport];
+    if (a) document.documentElement.style.setProperty("--accent", a);
+  }
+  if (document.body) applyAccent();
+  else document.addEventListener("DOMContentLoaded", applyAccent);
+
   // ---------- scroll behavior ----------
   // Lock page scroll when the content fits the viewport on desktop; allow
   // scrolling on mobile, on touch, or whenever content is taller than the

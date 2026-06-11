@@ -214,6 +214,109 @@
     return q.docs.map(function (d) { return d.data(); });
   };
 
+  // ---- self-service account management ----
+  EBKF.renameSelf = async function (newName) {
+    await EBKF.ready;
+    var u = EBKF.user;
+    if (!u) throw new Error("Sign in first.");
+    newName = (newName || "").trim();
+    var issue = nameIssues(newName);
+    if (issue) throw nameErr(issue, "Invalid display name.");
+    var oldName = EBKF.profileName || u.displayName || "";
+    var oldKey = nameKeyOf(oldName), newKey = nameKeyOf(newName);
+    if (newName === oldName) return;
+    if (newKey !== oldKey) {
+      if ((await EBKF.db.collection("usernames").doc(newKey).get()).exists)
+        throw nameErr("ebk/name-taken", "That display name is taken.");
+      await EBKF.db.collection("usernames").doc(newKey)
+        .set({ uid: u.uid, name: newName, created: Date.now() });
+      if (oldKey) {
+        try { await EBKF.db.collection("usernames").doc(oldKey).delete(); } catch (e) {}
+      }
+    }
+    await u.updateProfile({ displayName: newName });
+    await EBKF.db.collection("users").doc(u.uid)
+      .set({ name: newName, updated: Date.now() }, { merge: true });
+    EBKF.profileName = newName;
+    // propagate to the public leaderboards
+    var q = await EBKF.db.collection("scores").where("uid", "==", u.uid).get();
+    if (!q.empty) {
+      var batch = EBKF.db.batch();
+      q.docs.forEach(function (d) { batch.update(d.ref, { name: newName }); });
+      await batch.commit();
+    }
+    await EBKF.db.collection("totals").doc(u.uid)
+      .set({ name: newName }, { merge: true }).catch(function () {});
+    EBKF._cbs.forEach(function (cb) { try { cb(u); } catch (e) {} });
+    return newName;
+  };
+
+  // full self-service deletion (the privacy policy promises this)
+  EBKF.deleteAccount = async function (password) {
+    await EBKF.ready;
+    var u = EBKF.user;
+    if (!u) throw new Error("Sign in first.");
+    if (password) {
+      var cred = firebase.auth.EmailAuthProvider.credential(u.email, password);
+      await u.reauthenticateWithCredential(cred);
+    }
+    var uid = u.uid;
+    var name = EBKF.profileName || u.displayName || "";
+    async function wipe(coll) {
+      var q = await EBKF.db.collection(coll).where("uid", "==", uid).get();
+      if (q.empty) return;
+      var batch = EBKF.db.batch();
+      q.docs.forEach(function (d) { batch.delete(d.ref); });
+      await batch.commit();
+    }
+    await wipe("scores");
+    await wipe("gridPlays").catch(function () {});
+    try { await EBKF.db.collection("totals").doc(uid).delete(); } catch (e) {}
+    try { if (name) await EBKF.db.collection("usernames").doc(nameKeyOf(name)).delete(); } catch (e) {}
+    try { await EBKF.db.collection("users").doc(uid).delete(); } catch (e) {}
+    await u.delete();   // throws auth/requires-recent-login if reauth needed
+  };
+
+  EBKF.resendVerification = async function () {
+    await EBKF.ready;
+    if (EBKF.user) return EBKF.user.sendEmailVerification();
+  };
+
+  // ---- daily grid: community answer counts + one play per day ----
+  // gridStats/{g}_{cell}_{pid} = { g: "<sport>_<date>", cell, pid, name, n }
+  // Rarity of an answer = its count / all counts for that cell.
+  EBKF.recordGridAnswer = async function (sport, date, cell, player) {
+    await EBKF.ready;
+    if (!EBKF.user) return;
+    var g = sport + "_" + date;
+    var ref = EBKF.db.collection("gridStats").doc(g + "_" + cell + "_" + player.id);
+    return ref.set({
+      g: g, cell: cell, pid: String(player.id),
+      name: String(player.name || "").slice(0, 60),
+      n: firebase.firestore.FieldValue.increment(1),
+    }, { merge: true });
+  };
+  EBKF.gridStats = async function (sport, date) {
+    await EBKF.ready;
+    var q = await EBKF.db.collection("gridStats")
+      .where("g", "==", sport + "_" + date).get();
+    return q.docs.map(function (d) { return d.data(); });
+  };
+  EBKF.saveGridPlay = async function (sport, date, data) {
+    await EBKF.ready;
+    if (!EBKF.user) return;
+    var id = EBKF.user.uid + "_" + sport + "_" + date;
+    data.uid = EBKF.user.uid; data.sport = sport; data.date = date;
+    return EBKF.db.collection("gridPlays").doc(id).set(data).catch(function () {});
+  };
+  EBKF.getGridPlay = async function (sport, date) {
+    await EBKF.ready;
+    if (!EBKF.user) return null;
+    var d = await EBKF.db.collection("gridPlays")
+      .doc(EBKF.user.uid + "_" + sport + "_" + date).get();
+    return d.exists ? d.data() : null;
+  };
+
   // ---- admin + reporting ----
   var ADMIN_NAMES = ["seanzie"];
   EBKF.isAdmin = function () { return !!(EBKF.user && ADMIN_NAMES.indexOf(EBKF.user.displayName) > -1); };
@@ -279,6 +382,18 @@
     }
     return n;
   };
+  // admin: wipe a cheater's leaderboard presence (scores + totals)
+  EBKF.adminWipeScores = async function (targetUid) {
+    await EBKF.ready;
+    var q = await EBKF.db.collection("scores").where("uid", "==", targetUid).get();
+    if (!q.empty) {
+      var batch = EBKF.db.batch();
+      q.docs.forEach(function (d) { batch.delete(d.ref); });
+      await batch.commit();
+    }
+    try { await EBKF.db.collection("totals").doc(targetUid).delete(); } catch (e) {}
+  };
+
   EBKF.dismissReports = async function (targetUid) {
     await EBKF.ready;
     var q = await EBKF.db.collection("reports").where("targetUid", "==", targetUid).get();

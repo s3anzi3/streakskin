@@ -10,6 +10,7 @@
   const BEST_KEY = SPORT === "nfl" ? "ebk_statline_best_v2" : "ebk_statline_" + SPORT + "_best";
   (function () { if (!window.EBKF) { var s = document.createElement("script"); s.src = "/js/ebk-firebase.js"; document.head.appendChild(s); } })();
   const ebkRecord = (score) => { try { window.EBKF && EBKF.recordScore(SPORT, "stat-line", score); } catch (e) {} };
+  const sfx = (n) => { try { window.EBKS && EBKS.play(n); } catch (e) {} };
 
   const CFG = {
     nfl: {
@@ -115,7 +116,7 @@
   const posName = (p) => CFG.posNames[p] || p;
 
   const EXACT_REVEALS = 5;
-  const ROUND_MS = 20000;               // per-round clock; timeout ends the run
+  const ROUND_MS = 7000;                // per-round clock; timeout ends the run
 
   // ---- round timer ----
   let rtTO = null, rtLowTO = null, rtEl = null;
@@ -136,7 +137,7 @@
     void fill.offsetWidth;
     fill.style.transition = `width ${ROUND_MS}ms linear`;
     fill.style.width = "0%";
-    rtLowTO = setTimeout(() => { if (!S.locked) fill.classList.add("low"); }, ROUND_MS - 5000);
+    rtLowTO = setTimeout(() => { if (!S.locked) fill.classList.add("low"); }, ROUND_MS - 2500);
     rtTO = setTimeout(timeUp, ROUND_MS);
   }
   function rtStop() {
@@ -151,6 +152,7 @@
     if (S.locked) return;
     S.locked = true;
     rtStop();
+    sfx("timeout");
     ebkRecord(S.score);
     [...$("#options").children].forEach((b, i) => {
       b.disabled = true;
@@ -299,6 +301,7 @@
       else if (b === btn) b.classList.add("wrong");
     });
     $("#lifelines").hidden = true;
+    sfx(correct ? "correct" : "wrong");
     const banner = $("#banner");
     if (correct) {
       S.score += 1;

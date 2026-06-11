@@ -21,10 +21,11 @@ service cloud.firestore {
 
     match /users/{uid} {
       allow read: if true;
-      allow write: if isAdmin() || (signedIn() && request.auth.uid == uid
+      allow create, update: if isAdmin() || (signedIn() && request.auth.uid == uid
         && request.resource.data.name is string
         && request.resource.data.name.size() >= 2
         && request.resource.data.name.size() <= 40);
+      allow delete: if isAdmin() || (signedIn() && request.auth.uid == uid);
     }
 
     // unique display-name registry (create-only / update-denied => atomic uniqueness)
@@ -55,36 +56,84 @@ service cloud.firestore {
         && request.resource.data.sumScore is number
         && request.resource.data.sumScore >= 0 && request.resource.data.sumScore <= 100000
         && request.resource.data.updated == request.time);
-      allow update: if isAdmin() || (signedIn()
-        && request.resource.data.uid == request.auth.uid
-        && resource.data.uid == request.auth.uid
-        && request.resource.data.sport == resource.data.sport
-        && request.resource.data.game == resource.data.game
-        && request.resource.data.name is string && request.resource.data.name.size() <= 40
-        && request.resource.data.best is number
-        && request.resource.data.best >= resource.data.best
-        && request.resource.data.best <= 100000
-        && request.resource.data.plays == resource.data.plays + 1
-        && request.resource.data.sumScore is number
-        && request.resource.data.sumScore >= resource.data.sumScore
-        && request.resource.data.sumScore <= 100000000
-        && stampedAndThrottled());
-      allow delete: if isAdmin();
+      allow update: if isAdmin()
+        // owner renaming themselves: only the name field may change
+        || (signedIn() && resource.data.uid == request.auth.uid
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name'])
+            && request.resource.data.name is string
+            && request.resource.data.name.size() <= 40)
+        // owner recording a finished run
+        || (signedIn()
+            && request.resource.data.uid == request.auth.uid
+            && resource.data.uid == request.auth.uid
+            && request.resource.data.sport == resource.data.sport
+            && request.resource.data.game == resource.data.game
+            && request.resource.data.name is string && request.resource.data.name.size() <= 40
+            && request.resource.data.best is number
+            && request.resource.data.best >= resource.data.best
+            && request.resource.data.best <= 100000
+            && request.resource.data.plays == resource.data.plays + 1
+            && request.resource.data.sumScore is number
+            && request.resource.data.sumScore >= resource.data.sumScore
+            && request.resource.data.sumScore <= 100000000
+            && stampedAndThrottled());
+      allow delete: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);
     }
 
     // per-user aggregate totals (overall / per-sport / per-game sums of bests)
     // powering the combined leaderboards. Owner-only, validated, rate-limited.
     match /totals/{uid} {
       allow read: if true;
-      allow create, update: if isAdmin() || (signedIn() && request.auth.uid == uid
-        && request.resource.data.uid == uid
-        && request.resource.data.name is string && request.resource.data.name.size() <= 40
-        && request.resource.data.overall is number
-        && request.resource.data.overall >= 0 && request.resource.data.overall <= 10000000
-        && request.resource.data.plays is number
-        && request.resource.data.plays >= 0
-        && request.resource.data.updated == request.time);
+      allow create, update: if isAdmin()
+        // owner renaming themselves: only the name field may change
+        || (signedIn() && request.auth.uid == uid
+            && resource != null
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name'])
+            && request.resource.data.name is string
+            && request.resource.data.name.size() <= 40)
+        // owner rolling up a finished run
+        || (signedIn() && request.auth.uid == uid
+            && request.resource.data.uid == uid
+            && request.resource.data.name is string && request.resource.data.name.size() <= 40
+            && request.resource.data.overall is number
+            && request.resource.data.overall >= 0 && request.resource.data.overall <= 10000000
+            && request.resource.data.plays is number
+            && request.resource.data.plays >= 0
+            && request.resource.data.updated == request.time);
+      allow delete: if isAdmin() || (signedIn() && request.auth.uid == uid);
+    }
+
+    // daily-grid community answer counts: one doc per (grid, cell, player),
+    // n may only ever step up by one per write.
+    match /gridStats/{id} {
+      allow read: if true;
+      allow create, update: if signedIn()
+        && id == request.resource.data.g + '_' + string(request.resource.data.cell) + '_' + request.resource.data.pid
+        && request.resource.data.g is string && request.resource.data.g.size() <= 30
+        && request.resource.data.cell is int
+        && request.resource.data.cell >= 0 && request.resource.data.cell <= 8
+        && request.resource.data.pid is string && request.resource.data.pid.size() <= 40
+        && request.resource.data.name is string && request.resource.data.name.size() <= 60
+        && ((resource == null && request.resource.data.n == 1)
+            || (resource != null && request.resource.data.n == resource.data.n + 1));
       allow delete: if isAdmin();
+    }
+
+    // one daily-grid play per user per sport per day; immutable once written.
+    match /gridPlays/{id} {
+      allow read: if true;
+      allow create: if signedIn()
+        && id == request.auth.uid + '_' + request.resource.data.sport + '_' + request.resource.data.date
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.sport is string && request.resource.data.sport.size() <= 12
+        && request.resource.data.date is string && request.resource.data.date.size() <= 12
+        && request.resource.data.score is int
+        && request.resource.data.score >= 0 && request.resource.data.score <= 9
+        && request.resource.data.rarity is number
+        && request.resource.data.rarity >= 0 && request.resource.data.rarity <= 900
+        && request.resource.data.cells is list && request.resource.data.cells.size() <= 9;
+      allow update: if false;
+      allow delete: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);
     }
 
     // name reports: any signed-in user can file; only admins can read/resolve.

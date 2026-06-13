@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 200" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <radialGradient id="sc" cx="50%" cy="28%" r="88%">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="72%" stop-color="#d3dcec"/>
+      <stop offset="100%" stop-color="#94a2c2"/>
+    </radialGradient>
+  </defs>
+  <rect width="600" height="200" fill="url(#sc)"/>
+  <!-- seams connecting the pentagons -->
+  <g fill="none" stroke="#1a1f30" stroke-width="3.5" opacity="0.55">
+    <path d="M300 60 L210 30 M300 60 L390 30 M260 92 L150 110 M340 92 L450 110 M285 140 L250 200 M315 140 L350 200"/>
+  </g>
+  <!-- central pentagon -->
+  <polygon points="300,58 343,92 326,142 274,142 257,92" fill="#14182a"/>
+  <!-- partial pentagons at the corners -->
+  <g fill="#14182a">
+    <polygon points="150,-30 200,4 184,54 132,46 120,2"/>
+    <polygon points="450,-30 480,2 468,52 416,54 400,4"/>
+    <polygon points="120,150 170,140 196,182 168,224 124,210"/>
+    <polygon points="480,150 436,142 410,182 440,224 484,206"/>
+  </g>
+</svg>

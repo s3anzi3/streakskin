@@ -60,35 +60,28 @@
   left: 0; top: 0;
   white-space: nowrap;
   opacity: 0;
-  animation: eliteSkin 22s infinite ease-in-out;
+  /* the ball texture (an SVG) is clipped to the letters */
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  animation: eliteSkin 27s infinite ease-in-out;
   will-change: opacity;
 }
-/* each skin owns one quarter of the loop (staggered by negative delay) */
-.sk-football   { animation-delay: 0s; }
-.sk-basketball { animation-delay: -5.5s; }
-.sk-baseball   { animation-delay: -11s; }
-.sk-soccer     { animation-delay: -16.5s; }
+/* five balls, each owns ~1/5 of the loop (staggered by negative delay) */
+.sk-basketball { background-image: url("/img/ball-basketball.svg"); animation-delay: 0s; }
+.sk-football   { background-image: url("/img/ball-football.svg");   animation-delay: -5.4s; }
+.sk-soccer     { background-image: url("/img/ball-soccer.svg");     animation-delay: -10.8s; }
+.sk-hockey     { background-image: url("/img/ball-hockey.svg");     animation-delay: -16.2s; }
+.sk-baseball   { background-image: url("/img/ball-baseball.svg");   animation-delay: -21.6s; }
 
+/* visible most of its 1/5 window with brief eased cross-fades, so a ball is
+   almost always showing (the green base only peeks through the handoffs) */
 @keyframes eliteSkin {
   0%   { opacity: 0; }
-  6%   { opacity: 1; }
-  19%  { opacity: 1; }
-  25%  { opacity: 0; }
+  2%   { opacity: 1; }
+  18%  { opacity: 1; }
+  21%  { opacity: 0; }
   100% { opacity: 0; }
-}
-
-/* ball-skin gradients (glossy ball-color fills; distinct hue per ball) */
-.sk-football {
-  background-image: radial-gradient(125% 100% at 50% 20%, #eca05a, #93501f 55%, #5c2e12 100%);
-}
-.sk-basketball {
-  background-image: radial-gradient(125% 100% at 50% 20%, #ffb878, #e2761f 55%, #ad4f0d 100%);
-}
-.sk-baseball {
-  background-image: radial-gradient(125% 100% at 50% 20%, #fff6f1, #ffccc2 58%, #e89a8d 100%);
-}
-.sk-soccer {
-  background-image: radial-gradient(125% 100% at 50% 20%, #ffffff, #c4d0e8 70%, #8c9bc0 100%);
 }
 @media (prefers-reduced-motion: reduce) {
   .elite-skin { display: none; }   /* fall back to the static green base */

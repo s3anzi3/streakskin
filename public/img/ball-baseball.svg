@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 200" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <radialGradient id="bsb" cx="50%" cy="28%" r="88%">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="64%" stop-color="#ffe7e0"/>
+      <stop offset="100%" stop-color="#e7b0a4"/>
+    </radialGradient>
+  </defs>
+  <rect width="600" height="200" fill="url(#bsb)"/>
+  <!-- two opposing seam curves -->
+  <g fill="none" stroke="#cf2b2b" stroke-width="4" opacity="0.9">
+    <path d="M50 22 Q 300 86 550 22"/>
+    <path d="M50 178 Q 300 114 550 178"/>
+  </g>
+  <!-- angled stitch ticks along each seam -->
+  <g stroke="#cf2b2b" stroke-width="4" stroke-linecap="round">
+    <line x1="96" y1="34" x2="112" y2="22"/><line x1="146" y1="46" x2="162" y2="33"/>
+    <line x1="200" y1="55" x2="216" y2="42"/><line x1="258" y1="61" x2="274" y2="49"/>
+    <line x1="320" y1="61" x2="336" y2="49"/><line x1="380" y1="56" x2="396" y2="43"/>
+    <line x1="438" y1="47" x2="454" y2="34"/><line x1="488" y1="35" x2="504" y2="23"/>
+    <line x1="96" y1="166" x2="112" y2="178"/><line x1="146" y1="154" x2="162" y2="167"/>
+    <line x1="200" y1="145" x2="216" y2="158"/><line x1="258" y1="139" x2="274" y2="151"/>
+    <line x1="320" y1="139" x2="336" y2="151"/><line x1="380" y1="144" x2="396" y2="157"/>
+    <line x1="438" y1="153" x2="454" y2="166"/><line x1="488" y1="165" x2="504" y2="177"/>
+  </g>
+</svg>

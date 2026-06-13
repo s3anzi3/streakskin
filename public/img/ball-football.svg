@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 200" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <radialGradient id="fb" cx="50%" cy="32%" r="90%">
+      <stop offset="0" stop-color="#c8814a"/>
+      <stop offset="55%" stop-color="#8a4a1e"/>
+      <stop offset="100%" stop-color="#542a0f"/>
+    </radialGradient>
+    <filter id="grain" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="11" result="n"/>
+      <feColorMatrix in="n" type="matrix"
+        values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.18 0"/>
+    </filter>
+  </defs>
+  <rect width="600" height="200" fill="url(#fb)"/>
+  <rect width="600" height="200" filter="url(#grain)"/>
+  <!-- end stripes -->
+  <g fill="#f1e7d0" opacity="0.92">
+    <rect x="86" y="26" width="11" height="148" rx="5"/>
+    <rect x="503" y="26" width="11" height="148" rx="5"/>
+  </g>
+  <!-- lace spine + rungs -->
+  <g stroke="#f4ecd8" stroke-width="7" stroke-linecap="round">
+    <line x1="300" y1="62" x2="300" y2="138"/>
+    <line x1="279" y1="74" x2="321" y2="74"/>
+    <line x1="279" y1="90" x2="321" y2="90"/>
+    <line x1="279" y1="106" x2="321" y2="106"/>
+    <line x1="279" y1="122" x2="321" y2="122"/>
+  </g>
+</svg>

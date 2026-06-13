@@ -193,31 +193,28 @@
   gap: 2px; padding: 4px; cursor: pointer; text-align: center;
   transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
 }
-/* daily / practice tabs */
-.grid-tabs { display: flex; gap: 8px; justify-content: center; margin: 0 0 var(--sp-md); }
-.gtab {
-  padding: 8px 18px; border-radius: 999px; border: 1px solid var(--line);
-  background: var(--glass); color: var(--muted); font-weight: 800;
-  font-size: var(--fs-sm); cursor: pointer; font-family: inherit;
-  transition: background var(--dur) var(--ease), color var(--dur) var(--ease), border-color var(--dur) var(--ease);
-}
-.gtab:hover { border-color: var(--accent); }
-.gtab.active { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
-
-/* rarity chip shown on filled squares after a daily is scored */
+/* points chip shown on filled squares after the daily is scored
+   (rarer pick = more points) */
 .gcell { position: relative; }
-.cell-rar {
-  position: absolute; top: 4px; right: 4px;
-  font-size: 0.62rem; font-weight: 800;
-  padding: 2px 6px; border-radius: 999px;
-  background: rgba(10, 14, 28, 0.75);
+.cell-pts {
+  position: absolute; top: 3px; right: 3px;
+  font-size: 0.6rem; font-weight: 800;
+  padding: 1px 6px; border-radius: 999px;
+  background: rgba(10, 14, 28, 0.82);
   color: var(--gold);
-  border: 1px solid rgba(255, 209, 102, 0.4);
+  border: 1px solid rgba(255, 209, 102, 0.45);
 }
 
 .gcell:hover:not(.filled):not(.dead) { border-color: var(--accent); }
 .gcell:active:not(.filled):not(.dead) { transform: scale(0.96); }
 .gcell.filled { cursor: default; background: rgba(61,220,151,0.12); border-color: rgba(61,220,151,0.4); }
+/* headshot + name inside a solved square */
+.gcell .cell-ph {
+  width: 40px; height: 40px; border-radius: 50%; object-fit: cover;
+  background: #0c1124; border: 1px solid rgba(255,255,255,0.18);
+}
+.gcell .cell-ph.ph-blank { display: inline-block; }
+@media (max-width: 420px) { .gcell .cell-ph { width: 32px; height: 32px; } }
 /* 3D flip when a square resolves */
 @keyframes cellFlip {
   from { transform: perspective(600px) rotateY(88deg); opacity: 0.3; }
@@ -225,8 +222,8 @@
 }
 .gcell.just { animation: cellFlip 0.45s var(--ease) both; }
 .gcell.dead { cursor: default; opacity: 0.5; }
-.gcell .cell-name { font-weight: 700; font-size: 0.72rem; line-height: 1.1; }
-.gcell .cell-meta { color: var(--muted); font-size: 0.6rem; }
+.gcell .cell-name { font-weight: 700; font-size: 0.66rem; line-height: 1.08; }
+.gcell .cell-meta { color: var(--muted); font-size: 0.58rem; }
 .gcell .cell-plus { font-size: 1.6rem; color: var(--muted); }
 
 /* autocomplete */

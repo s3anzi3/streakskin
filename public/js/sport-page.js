@@ -39,4 +39,18 @@
       '<span class="game-foot">' + (live ? "Play now" : "In development") + "</span>";
     grid.appendChild(el);
   });
+
+  // Head-to-Head (Higher/Lower + Career Path) — real-time vs a friend
+  if (EBK.sportLive(key)) {
+    var h = document.createElement("a");
+    h.className = "game-card live h2h-card";
+    h.href = "/h2h?sport=" + key;
+    h.innerHTML =
+      '<span class="badge play">Live</span>' +
+      '<span class="game-emoji">⚔️</span>' +
+      '<h3 class="game-title">Head-to-Head</h3>' +
+      '<p class="game-desc">Challenge a friend in real time — same questions, highest streak wins. Higher/Lower &amp; Career Path.</p>' +
+      '<span class="game-foot">Play now</span>';
+    grid.appendChild(h);
+  }
 })();

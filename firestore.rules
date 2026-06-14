@@ -142,48 +142,42 @@ service cloud.firestore {
       allow delete: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);
     }
 
-    // head-to-head matches. Both participants may update, but only their own
-    // side's progress; the seed and identities are immutable after create.
-    match /matches/{id} {
+    // per-sport Elo ratings (head-to-head ranked). Owner-only writes.
+    match /elo/{uid} {
+      allow read: if true;
+      allow write: if signedIn() && request.auth.uid == uid
+        && request.resource.data.uid == uid
+        && request.resource.data.name is string && request.resource.data.name.size() <= 40;
+    }
+
+    // head-to-head rooms. A `players` map { uid: {name,streak,done,elo} } holds
+    // live progress. The host owns the room config (and may only change it in
+    // the lobby); each player may write ONLY their own entry in the players map
+    // and never exceed the room cap. Seed/identities are immutable after create.
+    match /rooms/{id} {
       allow read: if true;
       allow create: if signedIn()
         && request.resource.data.hostUid == request.auth.uid
-        && request.resource.data.guestUid == ""
-        && request.resource.data.status == "open"
+        && request.resource.data.status == "lobby"
         && request.resource.data.mode in ["higher-lower", "career-path"]
         && request.resource.data.sport is string && request.resource.data.sport.size() <= 12
         && request.resource.data.seed is string && request.resource.data.seed.size() <= 64
-        && request.resource.data.hostStreak == 0 && request.resource.data.guestStreak == 0
-        && request.resource.data.hostDone == false && request.resource.data.guestDone == false;
-      allow update: if signedIn()
-        // immutable across every update
-        && request.resource.data.seed == resource.data.seed
-        && request.resource.data.mode == resource.data.mode
-        && request.resource.data.sport == resource.data.sport
-        && request.resource.data.cat == resource.data.cat
-        && request.resource.data.hostUid == resource.data.hostUid
-        && request.resource.data.hostName == resource.data.hostName
-        && (
-          // an opponent joins an open match
-          (resource.data.guestUid == "" && request.auth.uid != resource.data.hostUid
-            && request.resource.data.guestUid == request.auth.uid
-            && request.resource.data.status == "active"
-            && request.resource.data.hostStreak == resource.data.hostStreak
-            && request.resource.data.hostDone == resource.data.hostDone)
-          // host updates only its own progress (guest side unchanged)
-          || (request.auth.uid == resource.data.hostUid
-            && request.resource.data.guestUid == resource.data.guestUid
-            && request.resource.data.guestName == resource.data.guestName
-            && request.resource.data.guestStreak == resource.data.guestStreak
-            && request.resource.data.guestDone == resource.data.guestDone)
-          // guest updates only its own progress (host side unchanged)
-          || (request.auth.uid == resource.data.guestUid
-            && request.resource.data.guestUid == resource.data.guestUid
-            && request.resource.data.hostStreak == resource.data.hostStreak
-            && request.resource.data.hostDone == resource.data.hostDone)
-        );
-      allow delete: if isAdmin()
-        || (signedIn() && resource.data.hostUid == request.auth.uid && resource.data.status == "open");
+        && request.resource.data.cap is int && request.resource.data.cap >= 2 && request.resource.data.cap <= 12
+        && request.resource.data.players.keys().hasOnly([request.auth.uid]);
+      allow update: if signedIn() && (
+        // host edits room config / starts, only while in the lobby
+        (request.auth.uid == resource.data.hostUid
+          && resource.data.status == "lobby"
+          && request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(['mode', 'sport', 'cat', 'catLabel', 'seed', 'status', 'rated', 'cap', 'hostElo', 'startedAt']))
+        // any player writes ONLY their own players-map entry (join in lobby,
+        // or progress once active); never exceeding the cap
+        || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['players'])
+          && request.resource.data.players.diff(resource.data.players).affectedKeys().hasOnly([request.auth.uid])
+          && request.resource.data.players.keys().size() <= resource.data.cap
+          && (resource.data.status == 'lobby' || resource.data.players.keys().hasAny([request.auth.uid])))
+      );
+      allow delete: if isAdmin() || (signedIn() && resource.data.hostUid == request.auth.uid);
     }
 
     // name reports: any signed-in user can file; only admins can read/resolve.

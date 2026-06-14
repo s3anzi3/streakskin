@@ -1,41 +1,32 @@
-/* EBK · Head-to-Head play engine (lobby + match) for Higher/Lower and Career
-   Path. Both players generate the IDENTICAL question sequence from the match
-   seed, so the contest is fair; Firestore only syncs each side's live streak.
-   The higher final streak wins. */
+/* EBK · Head-to-Head play engine (rooms model).
+   - Ranked Quick Match: rated 1v1, random mode + category, per-sport Elo.
+   - Private Room: host picks the mode, multiple players, unrated, share a code.
+   Everyone in a room generates the IDENTICAL question sequence from the room
+   seed; only live streaks sync. Highest final streak wins. The per-question
+   timer is deadline-based so tabbing out / lagging cannot buy extra time. */
 (() => {
   "use strict";
   const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const sfx = (n) => { try { window.EBKS && EBKS.play(n); } catch (e) {} };
   const esc = (s) => String(s).replace(/[<>&"']/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;", "'": "&#39;" }[c]));
 
-  // load firebase + h2h api
   (function () {
     if (!window.EBKF) { const s = document.createElement("script"); s.src = "/js/ebk-firebase.js"; document.head.appendChild(s); }
     if (!window.EBKH) { const s = document.createElement("script"); s.src = "/js/ebk-h2h.js"; document.head.appendChild(s); }
   })();
 
-  // ---- deterministic RNG (matches player-grid's) ----
   function seededRng(str) {
     let h = 1779033703 ^ str.length;
-    for (let i = 0; i < str.length; i++) {
-      h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
-      h = (h << 13) | (h >>> 19);
-    }
-    h = Math.imul(h ^ (h >>> 16), 2246822507);
-    h = Math.imul(h ^ (h >>> 13), 3266489909);
+    for (let i = 0; i < str.length; i++) { h = Math.imul(h ^ str.charCodeAt(i), 3432918353); h = (h << 13) | (h >>> 19); }
+    h = Math.imul(h ^ (h >>> 16), 2246822507); h = Math.imul(h ^ (h >>> 13), 3266489909);
     let a = (h ^= h >>> 16) >>> 0;
-    return function () {
-      a |= 0; a = (a + 0x6D2B79F5) | 0;
-      let t = Math.imul(a ^ (a >>> 15), 1 | a);
-      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-    };
+    return function () { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
   }
   const TIME_LIMIT = 7000;
   const SPORTS = ["nfl", "nba", "mlb", "nhl", "cfb", "soccer"];
   const SEQ_MAX = 50;
 
-  // ---- per-sport Career Path config (mirrors career-path.js) ----
   const CP = {
     nfl: { icon: "🏈", fmt: (y) => "" + y, facts: ["position", "draft", "college", "career", "teampath"],
       posNames: { QB: "Quarterback", RB: "Running Back", FB: "Fullback", HB: "Running Back", WR: "Wide Receiver", TE: "Tight End", DE: "Defensive End", DT: "Defensive Tackle", NT: "Nose Tackle", DL: "Defensive Lineman", EDGE: "Edge Rusher", LB: "Linebacker", OLB: "Outside Linebacker", ILB: "Inside Linebacker", MLB: "Middle Linebacker", CB: "Cornerback", S: "Safety", FS: "Free Safety", SS: "Strong Safety", DB: "Defensive Back" },
@@ -63,9 +54,8 @@
     const url = sport === "nfl" ? "/data/players.json" : "/data/" + sport + "/players.json";
     const res = await fetch(url, { cache: "force-cache" });
     if (!res.ok) throw new Error("data " + res.status);
-    const d = await res.json();
-    dataCache[sport] = d;
-    return d;
+    dataCache[sport] = await res.json();
+    return dataCache[sport];
   }
   let colleges = null;
   async function loadColleges() {
@@ -74,193 +64,197 @@
     catch (e) { colleges = {}; }
     return colleges;
   }
+  const MODE_LABEL = { "higher-lower": "Higher / Lower", "career-path": "Career Path" };
 
-  // ===================== STATE =====================
   const M = {
-    id: null, role: null, unsub: null, match: null,
+    id: null, role: null, unsub: null, room: null,
     sport: null, mode: null, cat: null, league: null,
     data: null, seq: [], idx: 0, streak: 0, done: false, locked: false,
-    started: false, ended: false,
+    started: false, ended: false, eloApplied: false, deadline: 0, _cat: null, _pool: null,
   };
 
-  // ===================== LOBBY =====================
-  function authReady(cb) {
-    const tick = () => { (window.EBKF && EBKF.onChange) ? EBKF.onChange(cb) : setTimeout(tick, 60); };
-    tick();
-  }
+  function authReady(cb) { const tick = () => { (window.EBKF && EBKF.onChange) ? EBKF.onChange(cb) : setTimeout(tick, 60); }; tick(); }
+  const uid = () => (window.EBKH && EBKH.uid && EBKH.uid()) || (window.EBKF && EBKF.user && EBKF.user.uid);
 
+  // ===================== LOBBY =====================
   function renderLobby() {
     const params = new URLSearchParams(location.search);
     const preSport = SPORTS.includes(params.get("sport")) ? params.get("sport") : "nfl";
-    const lobby = $("#lobby");
-    lobby.innerHTML =
+    $("#lobby").innerHTML =
       '<div class="h2h-intro"><h1>⚔️ Head-to-Head</h1>' +
-      '<p class="muted">Challenge a friend in real time. You both get the exact same questions. Highest streak wins.</p></div>' +
+      '<p class="muted">Same questions for everyone. Highest streak wins.</p></div>' +
       '<div id="signgate" class="center" hidden><p class="muted">Sign in to play head-to-head.</p>' +
       '<button class="gbtn primary" id="h2h-signin">Sign in</button></div>' +
       '<div id="setup" hidden>' +
-      '  <div class="h2h-field"><label>Mode</label><div class="seg" id="seg-mode">' +
-      '    <button class="segbtn active" data-mode="higher-lower">Higher / Lower</button>' +
-      '    <button class="segbtn" data-mode="career-path">Career Path</button></div></div>' +
-      '  <div class="h2h-field"><label>Sport</label><select id="sel-sport" class="search">' +
-      SPORTS.map((s) => `<option value="${s}"${s === preSport ? " selected" : ""}>${s.toUpperCase()}</option>`).join("") +
-      '  </select></div>' +
-      '  <div class="h2h-field" id="cat-field"><label>Category</label><select id="sel-cat" class="search"></select></div>' +
-      '  <div class="h2h-actions">' +
-      '    <button class="gbtn primary" id="btn-quick">⚡ Quick match</button>' +
-      '    <button class="gbtn" id="btn-create">＋ Create match (get a code)</button>' +
-      '  </div>' +
-      '  <div class="h2h-join"><input id="join-code" class="search" placeholder="Enter code" maxlength="6" autocapitalize="characters" />' +
-      '    <button class="gbtn" id="btn-join">Join</button></div>' +
+      '  <div class="h2h-panel"><h2>⚡ Ranked Quick Match</h2>' +
+      '    <p class="muted h2h-note">Random mode &amp; category. Win to climb your per-sport Elo.</p>' +
+      '    <div class="h2h-field"><label>Sport</label><select id="rk-sport" class="search">' +
+      SPORTS.map((s) => `<option value="${s}"${s === preSport ? " selected" : ""}>${s.toUpperCase()}</option>`).join("") + "</select></div>" +
+      '    <p class="h2h-elo" id="rk-elo"></p>' +
+      '    <button class="gbtn primary" id="btn-ranked">Find ranked match</button></div>' +
+      '  <div class="h2h-panel"><h2>🔒 Private Room</h2>' +
+      '    <p class="muted h2h-note">Create a room, share the code, and the host picks the mode. Multiple players welcome.</p>' +
+      '    <button class="gbtn" id="btn-create">Create a room</button>' +
+      '    <div class="h2h-join"><input id="join-code" class="search" placeholder="Enter code" maxlength="6" autocapitalize="characters" />' +
+      '      <button class="gbtn" id="btn-join">Join</button></div></div>' +
       '  <p class="h2h-msg" id="lobby-msg"></p>' +
-      '</div>' +
-      '<div id="waiting" hidden class="center"><h2>Waiting for an opponent…</h2>' +
-      '  <p class="muted">Share this code:</p><div class="h2h-code" id="wait-code"></div>' +
-      '  <p class="muted" id="wait-sub"></p><button class="gbtn ghost" id="btn-cancel">Cancel</button></div>';
-
+      "</div>";
     $("#h2h-signin") && $("#h2h-signin").addEventListener("click", () => window.EBKopenAuth && EBKopenAuth());
-    $("#seg-mode").addEventListener("click", (e) => {
-      const b = e.target.closest(".segbtn"); if (!b) return;
-      $$(".segbtn").forEach((x) => x.classList.toggle("active", x === b));
-      M._mode = b.dataset.mode;
-      $("#cat-field").style.display = M._mode === "higher-lower" ? "" : "none";
-      if (M._mode === "higher-lower") refreshCats();
-    });
-    $("#sel-sport").addEventListener("change", () => { if (curMode() === "higher-lower") refreshCats(); });
-    $("#btn-quick").addEventListener("click", () => act("quick"));
+    $("#btn-ranked").addEventListener("click", () => act("ranked"));
     $("#btn-create").addEventListener("click", () => act("create"));
     $("#btn-join").addEventListener("click", () => act("join"));
-    M._mode = "higher-lower";
-    refreshCats();
+    $("#rk-sport").addEventListener("change", showElo);
+    showElo();
   }
-  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
-  const curMode = () => M._mode || "higher-lower";
-
-  async function refreshCats() {
-    const sport = $("#sel-sport").value;
-    const sel = $("#sel-cat");
-    sel.innerHTML = '<option>loading…</option>';
-    try {
-      const d = await loadData(sport);
-      sel.innerHTML = (d.categories || []).map((c) => `<option value="${c.key}">${c.icon || ""} ${esc(c.label)}</option>`).join("");
-    } catch (e) { sel.innerHTML = '<option value="">(couldn\'t load)</option>'; }
+  async function showElo() {
+    const el = $("#rk-elo"); if (!el || !window.EBKH) return;
+    try { const e = await EBKH.myEloFor($("#rk-sport").value); el.textContent = "Your " + $("#rk-sport").value.toUpperCase() + " Elo: " + e; }
+    catch (e) { el.textContent = ""; }
   }
-
   function lobbyMsg(t, bad) { const el = $("#lobby-msg"); if (el) { el.textContent = t || ""; el.className = "h2h-msg" + (bad ? " bad" : ""); } }
 
-  async function act(kind) {
-    const mode = curMode(), sport = $("#sel-sport").value;
-    let cat = "", catLabel = "";
+  async function randomConfig(sport) {
+    const data = await loadData(sport);
+    const mode = Math.random() < 0.5 ? "higher-lower" : "career-path";
     if (mode === "higher-lower") {
-      cat = $("#sel-cat").value;
-      catLabel = $("#sel-cat").selectedOptions[0] ? $("#sel-cat").selectedOptions[0].textContent.trim() : cat;
-      if (!cat) return lobbyMsg("Pick a category.", true);
+      const cats = data.categories || [];
+      const c = cats[(Math.random() * cats.length) | 0] || { key: "", label: "" };
+      return { mode, sport, cat: c.key, catLabel: (c.icon ? c.icon + " " : "") + c.label };
     }
+    return { mode, sport, cat: "", catLabel: "" };
+  }
+
+  async function act(kind) {
     lobbyMsg("…");
     try {
       let res;
-      if (kind === "quick") res = await EBKH.quickMatch(mode, sport, cat, catLabel);
-      else if (kind === "create") res = await EBKH.createMatch(mode, sport, cat, catLabel);
-      else {
+      if (kind === "ranked") {
+        const sport = $("#rk-sport").value;
+        res = await EBKH.findRanked(sport);
+        if (!res) { const cfg = await randomConfig(sport); res = await EBKH.createRoom(Object.assign({ rated: true, cap: 2 }, cfg)); }
+      } else if (kind === "create") {
+        res = await EBKH.createRoom({ mode: "higher-lower", sport: $("#rk-sport") ? $("#rk-sport").value : "nfl", cat: "", catLabel: "", rated: false, cap: 8 });
+      } else {
         const code = $("#join-code").value;
         if (!code) return lobbyMsg("Enter a code to join.", true);
         res = await EBKH.joinByCode(code);
       }
-      enterMatch(res.id, res.role);
+      enterRoom(res.id, res.role);
     } catch (e) { lobbyMsg(e.message || "Something went wrong.", true); }
   }
 
-  function showWaiting(match) {
-    $("#setup").hidden = true;
-    $("#waiting").hidden = false;
-    $("#wait-code").textContent = match.code;
-    $("#wait-sub").textContent = match.catLabel ? (match.sport.toUpperCase() + " · " + match.catLabel) : match.sport.toUpperCase() + " · Career Path";
-    $("#btn-cancel").onclick = () => { if (M.unsub) M.unsub(); EBKH.cancel(M.id); location.reload(); };
+  // ===================== ROOM CONTROL =====================
+  function enterRoom(id, role) { M.id = id; M.role = role; if (M.unsub) M.unsub(); M.unsub = EBKH.listen(id, onRoom); }
+
+  function onRoom(room) {
+    M.room = room;
+    if (room.status === "lobby") {
+      $("#lobby").hidden = false; $("#match").hidden = true;
+      renderRoomLobby(room);
+      // ranked auto-starts once two players are in
+      if (M.role === "host" && room.rated && room.players && Object.keys(room.players).length >= (room.cap || 2))
+        EBKH.start(M.id);
+      return;
+    }
+    if (room.status !== "lobby" && !M.started) { M.started = true; $("#lobby").hidden = true; $("#match").hidden = false; beginMatch(room).catch((e) => { $("#match").innerHTML = '<p class="center muted" style="padding:2rem">Couldn\'t start: ' + esc(e.message) + "</p>"; }); }
+    if (M.started) { renderStandings(); maybeResult(); }
+  }
+
+  function playerList(room) { const ps = room.players || {}; return Object.keys(ps).map((u) => Object.assign({ uid: u }, ps[u])); }
+
+  function renderRoomLobby(room) {
+    const isHost = M.role === "host";
+    const players = playerList(room);
+    let html = '<div class="h2h-intro"><h1>' + (room.rated ? "⚡ Ranked Match" : "🔒 Private Room") + "</h1></div>" +
+      '<div class="center"><p class="muted">Room code</p><div class="h2h-code">' + esc(room.code) + "</div></div>" +
+      '<div class="h2h-players"><h3>Players (' + players.length + ")</h3>" +
+      players.map((p) => `<div class="stand${p.uid === uid() ? " me" : ""}"><span class="st-name">${esc(p.name)}${p.uid === room.hostUid ? " 👑" : ""}</span></div>`).join("") + "</div>";
+
+    if (room.rated) {
+      html += '<p class="center muted">' + (players.length < 2 ? "Waiting for an opponent…" : "Starting…") + "</p>";
+    } else if (isHost) {
+      html += '<div class="h2h-panel"><h3>Host setup</h3>' +
+        '<div class="h2h-field"><label>Mode</label><div class="seg" id="seg-mode">' +
+        Object.keys(MODE_LABEL).map((m) => `<button class="segbtn${room.mode === m ? " active" : ""}" data-mode="${m}">${MODE_LABEL[m]}</button>`).join("") + "</div></div>" +
+        '<div class="h2h-field"><label>Sport</label><select id="cfg-sport" class="search">' +
+        SPORTS.map((s) => `<option value="${s}"${room.sport === s ? " selected" : ""}>${s.toUpperCase()}</option>`).join("") + "</select></div>" +
+        '<div class="h2h-field" id="cfg-cat-field"' + (room.mode === "higher-lower" ? "" : ' style="display:none"') + '><label>Category</label><select id="cfg-cat" class="search"></select></div>' +
+        '<button class="gbtn primary" id="btn-start"' + (players.length < 2 ? " disabled" : "") + ">Start match</button>" +
+        (players.length < 2 ? '<p class="muted center" style="margin-top:8px">Need at least one more player.</p>' : "") + "</div>";
+    } else {
+      html += '<p class="center muted">Mode: <b>' + MODE_LABEL[room.mode] + "</b>" + (room.catLabel ? " · " + esc(room.catLabel) : "") + " · " + room.sport.toUpperCase() + "<br>Waiting for the host to start…</p>";
+    }
+    html += '<div class="center" style="margin-top:var(--sp-md)"><button class="gbtn ghost" id="btn-leave">Leave</button></div>';
+    $("#lobby").innerHTML = html;
+
+    $("#btn-leave").addEventListener("click", () => { if (M.unsub) M.unsub(); if (isHost) EBKH.cancel(M.id); location.href = "/h2h"; });
+    if (room.rated) return;
+    if (isHost) {
+      $("#seg-mode").addEventListener("click", (e) => { const b = e.target.closest(".segbtn"); if (!b) return; EBKH.setConfig(M.id, { mode: b.dataset.mode }); });
+      $("#cfg-sport").addEventListener("change", (e) => EBKH.setConfig(M.id, { sport: e.target.value, cat: "", catLabel: "" }));
+      $("#btn-start").addEventListener("click", () => { if (playerList(room).length >= 2) EBKH.start(M.id); });
+      if (room.mode === "higher-lower") fillCfgCats(room);
+    }
+  }
+  async function fillCfgCats(room) {
+    const sel = $("#cfg-cat"); if (!sel) return;
+    try {
+      const d = await loadData(room.sport);
+      sel.innerHTML = (d.categories || []).map((c) => `<option value="${c.key}"${room.cat === c.key ? " selected" : ""}>${c.icon || ""} ${esc(c.label)}</option>`).join("");
+      sel.onchange = () => { const o = sel.selectedOptions[0]; EBKH.setConfig(M.id, { cat: sel.value, catLabel: o ? o.textContent.trim() : sel.value }); };
+    } catch (e) {}
   }
 
   // ===================== MATCH =====================
-  function enterMatch(id, role) {
-    M.id = id; M.role = role;
-    M.unsub = EBKH.listen(id, onMatch);
-  }
-
-  async function onMatch(match) {
-    M.match = match;
-    // lobby waiting state for an open host match
-    if (match.status === "open") { $("#lobby").hidden = false; $("#match").hidden = true; showWaiting(match); return; }
-
-    if (!M.started && match.status === "active") {
-      M.started = true;
-      $("#lobby").hidden = true; $("#match").hidden = false;
-      try { await beginMatch(match); }
-      catch (e) { $("#match").innerHTML = '<p class="center muted" style="padding:2rem">Couldn\'t start the match: ' + esc(e.message) + "</p>"; return; }
-    }
-    paintOpponent();
-    maybeResult();
-  }
-
-  function oppFields() {
-    return M.role === "host"
-      ? { name: M.match.guestName, streak: M.match.guestStreak, done: M.match.guestDone }
-      : { name: M.match.hostName, streak: M.match.hostStreak, done: M.match.hostDone };
-  }
-  function meDone() { return M.role === "host" ? M.match.hostDone : M.match.guestDone; }
-
-  function paintOpponent() {
-    const o = oppFields();
-    const on = $("#opp-name"), os = $("#opp-streak");
-    if (on) on.textContent = o.name || "Opponent";
-    if (os) os.textContent = o.streak || 0;
-    const od = $("#opp-done");
-    if (od) od.hidden = !o.done;
-  }
-
-  async function beginMatch(match) {
-    M.sport = match.sport; M.mode = match.mode; M.cat = match.cat;
-    M.league = window[match.sport.toUpperCase()];
-    M.data = await loadData(match.sport);
-    if (match.mode === "career-path" && CP[match.sport].facts.includes("college")) await loadColleges();
-    M.seq = match.mode === "higher-lower" ? genHL(match) : genCP(match);
-    M.idx = 0; M.streak = 0; M.done = false; M.ended = false;
-    try { window.__H2H = M; } catch (e) {}   // test/debug hook
-
+  async function beginMatch(room) {
+    M.sport = room.sport; M.mode = room.mode; M.cat = room.cat;
+    M.league = window[room.sport.toUpperCase()];
+    M.data = await loadData(room.sport);
+    if (room.mode === "career-path" && CP[room.sport].facts.includes("college")) await loadColleges();
+    M.seq = room.mode === "higher-lower" ? genHL(room) : genCP(room);
+    M.idx = 0; M.streak = 0; M.done = false; M.ended = false; M.eloApplied = false;
+    try { window.__H2H = M; } catch (e) {}
     $("#match").innerHTML =
-      '<div class="vs-head">' +
-      '  <div class="vs-side me"><div class="vs-name">You</div><div class="vs-streak" id="me-streak">0</div></div>' +
-      '  <div class="vs-mid">VS</div>' +
-      '  <div class="vs-side opp"><div class="vs-name" id="opp-name">Opponent</div><div class="vs-streak" id="opp-streak">0</div>' +
-      '    <div class="vs-flag" id="opp-done" hidden>done</div></div>' +
-      '</div>' +
+      '<div class="h2h-standings" id="standings"></div>' +
       '<div class="round-timer h2h-timer"><div class="fill"></div></div>' +
       '<div class="h2h-sub center muted" id="h2h-sub"></div>' +
-      '<div id="stage"></div>' +
-      '<div id="result" class="center" hidden></div>';
-    $("#h2h-sub").textContent = (match.catLabel ? match.catLabel + " · " : "") + match.sport.toUpperCase() +
-      " · " + (match.mode === "higher-lower" ? "Higher / Lower" : "Career Path");
-    paintOpponent();
+      '<div id="stage"></div><div id="result" class="center" hidden></div>';
+    $("#h2h-sub").textContent = (room.catLabel ? room.catLabel + " · " : "") + room.sport.toUpperCase() + " · " + MODE_LABEL[room.mode] + (room.rated ? " · Ranked" : "");
+    renderStandings();
     nextRound();
   }
 
-  // ---- timer ----
-  let tTO = null, tLowTO = null;
+  function renderStandings() {
+    const el = $("#standings"); if (!el || !M.room) return;
+    const arr = playerList(M.room).sort((a, b) => (b.streak || 0) - (a.streak || 0));
+    el.innerHTML = arr.map((p) =>
+      `<div class="stand${p.uid === uid() ? " me" : ""}${p.done ? " done" : ""}"><span class="st-name">${esc(p.name)}</span>` +
+      `<span class="st-streak">${p.streak || 0}</span>${p.done ? '<span class="st-flag">done</span>' : ""}</div>`).join("");
+  }
+
+  // ---- hardened timer (deadline-based: tabbing out can't pause it) ----
+  let tTO = null, tLowTO = null, tTick = null;
   function timerStart() {
-    const fill = $(".h2h-timer .fill"); if (!fill) return;
-    clearTimeout(tTO); clearTimeout(tLowTO);
-    fill.classList.remove("low");
-    fill.style.transition = "none"; fill.style.width = "100%"; void fill.offsetWidth;
-    fill.style.transition = `width ${TIME_LIMIT}ms linear`; fill.style.width = "0%";
-    tLowTO = setTimeout(() => { if (!M.locked) fill.classList.add("low"); }, TIME_LIMIT - 2500);
-    tTO = setTimeout(() => onAnswer(null), TIME_LIMIT);
+    M.deadline = Date.now() + TIME_LIMIT;
+    const fill = $(".h2h-timer .fill");
+    if (fill) {
+      fill.classList.remove("low"); fill.style.transition = "none"; fill.style.width = "100%"; void fill.offsetWidth;
+      fill.style.transition = `width ${TIME_LIMIT}ms linear`; fill.style.width = "0%";
+      tLowTO = setTimeout(() => { if (!M.locked) fill.classList.add("low"); }, TIME_LIMIT - 2500);
+    }
+    clearTimeout(tTO); clearInterval(tTick);
+    tTO = setTimeout(() => onAnswer(null), TIME_LIMIT + 40);
+    tTick = setInterval(() => { if (!M.locked && Date.now() >= M.deadline) onAnswer(null); }, 250);
   }
   function timerStop() {
-    clearTimeout(tTO); clearTimeout(tLowTO);
-    const fill = $(".h2h-timer .fill"); if (!fill) return;
-    fill.style.transition = "none"; fill.style.width = getComputedStyle(fill).width;
+    clearTimeout(tTO); clearTimeout(tLowTO); clearInterval(tTick);
+    const fill = $(".h2h-timer .fill"); if (fill) { fill.style.transition = "none"; fill.style.width = getComputedStyle(fill).width; }
   }
+  document.addEventListener("visibilitychange", () => { if (!document.hidden && !M.locked && M.deadline && Date.now() >= M.deadline) onAnswer(null); });
 
   function nextRound() {
     if (M.done) return;
-    if (M.idx >= M.seq.length - (M.mode === "higher-lower" ? 1 : 0)) { bust(true); return; } // ran out (capped win)
+    if (M.idx >= M.seq.length - (M.mode === "higher-lower" ? 1 : 0)) { bust(true); return; }
     M.locked = false;
     (M.mode === "higher-lower" ? renderHL() : renderCP());
     timerStart();
@@ -270,78 +264,84 @@
     if (M.locked) return;
     M.locked = true;
     timerStop();
+    if (choice != null && Date.now() > M.deadline + 250) choice = null; // late click = timeout
     const correct = (M.mode === "higher-lower") ? checkHL(choice) : checkCP(choice);
     if (correct) {
       M.streak++; sfx("correct");
-      $("#me-streak").textContent = M.streak;
-      EBKH.update(M.id, M.role, { streak: M.streak });
+      EBKH.progress(M.id, { streak: M.streak });
       revealAndAdvance();
-    } else {
-      sfx("wrong");
-      revealWrong();
-      setTimeout(() => bust(false), 1100);
-    }
+    } else { sfx("wrong"); revealWrong(); setTimeout(() => bust(false), 1100); }
   }
 
   function bust(completed) {
     if (M.done) return;
-    M.done = true;
-    timerStop();
+    M.done = true; timerStop();
     sfx(completed ? "best" : "over");
-    EBKH.update(M.id, M.role, { streak: M.streak, done: true });
+    EBKH.progress(M.id, { streak: M.streak, done: true });
     const stage = $("#stage");
     if (stage) stage.innerHTML = `<div class="h2h-bust">${completed ? "Cleared the board!" : "Streak ended"} — you reached <b>${M.streak}</b>.</div>`;
     maybeResult();
   }
 
   function maybeResult() {
-    if (!M.match) return;
-    const iAmDone = meDone() || M.done;
-    const o = oppFields();
+    if (!M.room) return;
+    const ps = M.room.players || {};
+    const meEntry = ps[uid()];
+    const iDone = (meEntry && meEntry.done) || M.done;
     const r = $("#result"); if (!r) return;
-    if (!iAmDone) return;
-    if (!o.done) {
+    if (!iDone) return;
+    const arr = playerList(M.room);
+    const allDone = arr.length >= 2 && arr.every((p) => p.done);
+    if (!allDone) {
       r.hidden = false;
-      r.innerHTML = `<div class="h2h-wait">You scored <b>${M.streak}</b>. Waiting for ${esc(o.name || "opponent")}… <span class="muted">(live: ${o.streak || 0})</span></div>`;
+      r.innerHTML = `<div class="h2h-wait">You scored <b>${M.streak}</b>. Waiting for the others to finish…</div>`;
       return;
     }
-    // both done
-    if (M.ended) return;
-    M.ended = true;
-    const mine = Math.max(M.streak, (M.role === "host" ? M.match.hostStreak : M.match.guestStreak) || 0);
-    const theirs = o.streak || 0;
+    if (M.ended) return; M.ended = true;
+    arr.sort((a, b) => (b.streak || 0) - (a.streak || 0));
+    const top = arr[0].streak || 0;
+    const mine = meEntry ? (meEntry.streak || 0) : M.streak;
+    const winners = arr.filter((p) => (p.streak || 0) === top);
     let verdict, cls;
-    if (mine > theirs) { verdict = "You win! 🏆"; cls = "win"; sfx("best"); }
-    else if (mine < theirs) { verdict = "You lost."; cls = "lose"; sfx("over"); }
-    else { verdict = "Tie game."; cls = "tie"; }
-    // the host records the official result once
-    if (M.role === "host" && !M.match.winner)
-      EBKH.update(M.id, M.role, { winner: mine > theirs ? "host" : mine < theirs ? "guest" : "tie", status: "done" });
+    if (mine === top && winners.length === 1) { verdict = "You win! 🏆"; cls = "win"; sfx("best"); }
+    else if (mine === top) { verdict = "Tie at the top."; cls = "tie"; }
+    else { verdict = "You lost."; cls = "lose"; sfx("over"); }
+
+    let eloHtml = "";
+    if (M.room.rated && arr.length === 2 && !M.eloApplied) {
+      M.eloApplied = true;
+      const opp = arr.find((p) => p.uid !== uid());
+      const myPre = (meEntry && meEntry.elo) || 1000, oppPre = (opp && opp.elo) || 1000;
+      const result = mine > (opp ? opp.streak : 0) ? 1 : mine < (opp ? opp.streak : 0) ? 0 : 0.5;
+      EBKH.applyElo(M.sport, myPre, oppPre, result).then((nw) => {
+        if (nw != null) { const d = nw - myPre; const e = $("#elo-line"); if (e) e.textContent = `${M.sport.toUpperCase()} Elo: ${nw} (${d >= 0 ? "+" : ""}${d})`; }
+      });
+      eloHtml = '<div class="h2h-elo" id="elo-line">Updating Elo…</div>';
+    }
+    if (M.role === "host") EBKH.finishRoom(M.id);
+
     r.hidden = false;
     r.innerHTML =
       `<div class="h2h-verdict ${cls}">${verdict}</div>` +
-      `<div class="h2h-final">You ${mine} · ${esc(o.name || "Opponent")} ${theirs}</div>` +
+      '<div class="h2h-board">' + arr.map((p, i) =>
+        `<div class="stand${p.uid === uid() ? " me" : ""}"><span class="st-rank">${["🥇", "🥈", "🥉"][i] || (i + 1)}</span><span class="st-name">${esc(p.name)}</span><span class="st-streak">${p.streak || 0}</span></div>`).join("") + "</div>" +
+      eloHtml +
       '<div class="row-btns" style="justify-content:center;margin-top:var(--sp-md)">' +
       '<button class="gbtn primary" onclick="location.href=\'/h2h\'">Play again</button>' +
       `<button class="gbtn ghost" onclick="location.href='/${M.sport}'">Back to ${M.sport.toUpperCase()}</button></div>`;
   }
 
   // ===================== HIGHER / LOWER =====================
-  function genHL(match) {
-    const rng = seededRng(match.seed + "|hl|" + match.cat);
-    const pool = M.data.players.filter((p) => p.stats[match.cat] != null);
-    const cat = (M.data.categories || []).find((c) => c.key === match.cat) || { key: match.cat, label: match.cat, decimals: 0 };
-    M._cat = cat;
-    const chain = [];
-    let prev = null, prevVal = null;
+  function genHL(room) {
+    const rng = seededRng(room.seed + "|hl|" + room.cat);
+    const pool = M.data.players.filter((p) => p.stats[room.cat] != null);
+    M._cat = (M.data.categories || []).find((c) => c.key === room.cat) || { key: room.cat, label: room.cat, decimals: 0 };
+    const chain = []; let prev = null, prevVal = null;
     for (let i = 0; i < SEQ_MAX + 1 && pool.length; i++) {
       let pick = null;
-      for (let t = 0; t < 80; t++) {
-        const c = pool[(rng() * pool.length) | 0];
-        if (c !== prev && c.stats[match.cat] !== prevVal) { pick = c; break; }
-      }
+      for (let t = 0; t < 80; t++) { const c = pool[(rng() * pool.length) | 0]; if (c !== prev && c.stats[room.cat] !== prevVal) { pick = c; break; } }
       if (!pick) pick = pool[(rng() * pool.length) | 0];
-      chain.push(pick); prev = pick; prevVal = pick.stats[match.cat];
+      chain.push(pick); prev = pick; prevVal = pick.stats[room.cat];
     }
     return chain;
   }
@@ -349,8 +349,7 @@
   function hlCard(p, revealedVal) {
     const L = M.league, cat = M._cat;
     const team = L ? `<img class="tlogo" src="${L.logo(p.team)}" alt="" onerror="this.remove()"> ${esc(L.name(p.team))}` : esc(p.team || "");
-    const val = revealedVal != null
-      ? `<div class="hl2-stat">${fmtN(revealedVal, cat.decimals)} <span>${esc(cat.label)}</span></div>` : "";
+    const val = revealedVal != null ? `<div class="hl2-stat">${fmtN(revealedVal, cat.decimals)} <span>${esc(cat.label)}</span></div>` : "";
     return `<img class="hl2-ph" src="${p.headshot || "/img/avatar.svg"}" alt="" onerror="this.src='/img/avatar.svg'">` +
       `<div class="hl2-name">${esc(p.name)}</div><div class="hl2-meta">${team}</div>${val}`;
   }
@@ -365,28 +364,22 @@
     $$("#hl-ch .hl2-btns button").forEach((b) => b.addEventListener("click", () => onAnswer(b.dataset.dir)));
   }
   function checkHL(choice) {
+    if (choice == null) return false;
     const a = M.seq[M.idx], c = M.seq[M.idx + 1], k = M._cat.key;
-    if (choice == null) return false; // timeout
-    const higher = c.stats[k] > a.stats[k];
-    return (choice === "higher") === higher;
+    return (choice === "higher") === (c.stats[k] > a.stats[k]);
   }
   function revealAndAdvance() {
     if (M.mode === "higher-lower") {
       const c = M.seq[M.idx + 1], ch = $("#hl-ch");
-      if (ch) {
-        const btns = ch.querySelector(".hl2-btns"); if (btns) btns.remove();
-        ch.insertAdjacentHTML("beforeend", `<div class="hl2-stat reveal">${fmtN(c.stats[M._cat.key], M._cat.decimals)} <span>${esc(M._cat.label)}</span></div>`);
-      }
-    } else {
-      markCP(true);
-    }
+      if (ch) { const b = ch.querySelector(".hl2-btns"); if (b) b.remove(); ch.insertAdjacentHTML("beforeend", `<div class="hl2-stat reveal">${fmtN(c.stats[M._cat.key], M._cat.decimals)} <span>${esc(M._cat.label)}</span></div>`); }
+    } else markCP(true);
     M.idx++;
     setTimeout(() => { if (!M.done) nextRound(); }, 900);
   }
   function revealWrong() {
     if (M.mode === "higher-lower") {
       const c = M.seq[M.idx + 1], ch = $("#hl-ch");
-      if (ch) { ch.querySelector(".hl2-btns") && ch.querySelector(".hl2-btns").remove(); ch.insertAdjacentHTML("beforeend", `<div class="hl2-stat reveal bad">${fmtN(c.stats[M._cat.key], M._cat.decimals)} <span>${esc(M._cat.label)}</span></div>`); }
+      if (ch) { const b = ch.querySelector(".hl2-btns"); if (b) b.remove(); ch.insertAdjacentHTML("beforeend", `<div class="hl2-stat reveal bad">${fmtN(c.stats[M._cat.key], M._cat.decimals)} <span>${esc(M._cat.label)}</span></div>`); }
     } else markCP(false);
   }
 
@@ -397,9 +390,7 @@
     for (const p of M.data.players) {
       if (!p.id) continue;
       let c = careers.get(p.id);
-      if (!c) { const bio = people[p.id] || {};
-        c = { id: p.id, name: p.name, pos: p.pos, headshot: p.headshot, college: bio.college || "", dy: bio.draftYear, dr: bio.draftRound, dp: bio.draftPick, dt: bio.draftTeam || "", years: new Map(), notable: false };
-        careers.set(p.id, c); }
+      if (!c) { const bio = people[p.id] || {}; c = { id: p.id, name: p.name, pos: p.pos, headshot: p.headshot, college: bio.college || "", dy: bio.draftYear, dr: bio.draftRound, dp: bio.draftPick, dt: bio.draftTeam || "", years: new Map(), notable: false }; careers.set(p.id, c); }
       c.years.set(p.season, p.team);
       if (p.headshot && !c.headshot) c.headshot = p.headshot;
       if (cfg.notable.some(([k, thr]) => (p.stats[k] || 0) >= thr)) c.notable = true;
@@ -412,13 +403,13 @@
       const path = []; for (const y of yrs) { const k = L.keyOf(c.years.get(y)); if (path[path.length - 1] !== k) path.push(k); }
       c.path = path; pool.push(c);
     }
-    pool.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)); // deterministic
+    pool.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
     return pool;
   }
-  function genCP(match) {
-    const rng = seededRng(match.seed + "|cp");
+  function genCP(room) {
+    const rng = seededRng(room.seed + "|cp");
     const pool = buildCareers(); M._pool = pool;
-    const cfg = CP[match.sport];
+    const cfg = CP[room.sport];
     const take = (arr) => arr.splice((rng() * arr.length) | 0, 1)[0];
     const shuf = (arr) => { for (let i = arr.length - 1; i > 0; i--) { const j = (rng() * (i + 1)) | 0; [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; };
     const seq = []; const used = new Set();
@@ -427,7 +418,6 @@
       for (let t = 0; t < 60; t++) { const c = pool[(rng() * pool.length) | 0]; if (!used.has(c.id)) { m = c; break; } }
       if (!m) m = pool[(rng() * pool.length) | 0];
       used.add(m.id);
-      // options: prefer same position + overlapping era
       let cand = pool.filter((o) => o.id !== m.id && o.max >= m.min - 8 && o.min <= m.max + 8);
       if (cand.length < 6) cand = pool.filter((o) => o.id !== m.id);
       const byPos = {}; cand.forEach((o) => { (byPos[o.pos] = byPos[o.pos] || []).push(o); });
@@ -436,8 +426,7 @@
       for (const pk of shuf(Object.keys(byPos).filter((p) => p !== m.pos))) { if (picks.length >= 3) break; if (byPos[pk].length) picks.push(take(byPos[pk])); }
       const rest = cand.filter((o) => !picks.includes(o));
       while (picks.length < 3 && rest.length) picks.push(take(rest));
-      const opts = shuf(picks.concat([m]).map((o) => ({ id: o.id, name: o.name })));
-      seq.push({ m: m, hiddenIdx: (rng() * cfg.facts.length) | 0, opts: opts });
+      seq.push({ m: m, hiddenIdx: (rng() * cfg.facts.length) | 0, opts: shuf(picks.concat([m]).map((o) => ({ id: o.id, name: o.name }))) });
     }
     return seq;
   }
@@ -457,31 +446,20 @@
   }
   function renderCP() {
     const q = M.seq[M.idx], fs = cpFacts(q.m);
-    const clues = fs.map((f, i) => {
-      const hidden = i === q.hiddenIdx;
-      return `<div class="clue${hidden ? " locked" : ""}"><span class="c-icon">${hidden ? "🔒" : f.icon}</span>` +
-        `<div><div class="c-k">${f.k}</div><div class="c-v">${hidden ? "hidden" : f.v}</div></div></div>`;
-    }).join("");
+    const clues = fs.map((f, i) => { const hid = i === q.hiddenIdx; return `<div class="clue${hid ? " locked" : ""}"><span class="c-icon">${hid ? "🔒" : f.icon}</span><div><div class="c-k">${f.k}</div><div class="c-v">${hid ? "hidden" : f.v}</div></div></div>`; }).join("");
     const opts = q.opts.map((o) => `<button class="opt" data-id="${o.id}">${esc(o.name)}</button>`).join("");
     $("#stage").innerHTML = `<div class="cp2"><div class="clues">${clues}</div><div class="opt-list">${opts}</div></div>`;
     $$("#stage .opt").forEach((b) => b.addEventListener("click", () => onAnswer(b.dataset.id)));
   }
-  function checkCP(choice) { if (choice == null) return false; return choice === M.seq[M.idx].m.id; }
+  function checkCP(choice) { return choice != null && choice === M.seq[M.idx].m.id; }
   function markCP(correct) {
     const q = M.seq[M.idx];
     $$("#stage .opt").forEach((b) => { b.disabled = true; if (b.dataset.id === q.m.id) b.classList.add("correct"); });
-    // reveal hidden clue
     const cl = $$("#stage .clue")[q.hiddenIdx];
-    if (cl) { const fs = cpFacts(q.m), f = fs[q.hiddenIdx]; cl.classList.remove("locked"); cl.innerHTML = `<span class="c-icon">${f.icon}</span><div><div class="c-k">${f.k}</div><div class="c-v">${f.v}</div></div>`; }
+    if (cl) { const f = cpFacts(q.m)[q.hiddenIdx]; cl.classList.remove("locked"); cl.innerHTML = `<span class="c-icon">${f.icon}</span><div><div class="c-k">${f.k}</div><div class="c-v">${f.v}</div></div>`; }
   }
+
   // ===================== BOOT =====================
-  function boot() {
-    renderLobby();
-    authReady((user) => {
-      $("#signgate").hidden = !!user;
-      $("#setup").hidden = !user;
-      if (!user) { $("#waiting").hidden = true; }
-    });
-  }
-  boot();
+  renderLobby();
+  authReady((user) => { const sg = $("#signgate"), su = $("#setup"); if (sg) sg.hidden = !!user; if (su) su.hidden = !user; if (user) showElo(); });
 })();

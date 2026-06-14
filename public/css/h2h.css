@@ -2,6 +2,32 @@
 .h2h-intro { text-align: center; margin: var(--sp-lg) 0; }
 .h2h-intro h1 { font-size: var(--fs-xl); margin: 0 0 6px; }
 
+.h2h-panel {
+  border: 1px solid var(--line); border-radius: 16px; background: var(--glass);
+  padding: var(--sp-md); margin: var(--sp-md) 0;
+}
+.h2h-panel h2 { margin: 0 0 4px; font-size: var(--fs-lg); }
+.h2h-panel h3 { margin: 0 0 var(--sp-sm); font-size: var(--fs-md); }
+.h2h-note { font-size: var(--fs-sm); margin: 0 0 var(--sp-sm); }
+.h2h-panel .gbtn { width: 100%; }
+.h2h-elo { color: var(--accent); font-weight: 800; font-size: var(--fs-sm); margin: 8px 0; text-align: center; }
+
+.h2h-players { border: 1px solid var(--line); border-radius: 14px; background: var(--glass); padding: var(--sp-sm) var(--sp-md); margin: var(--sp-md) 0; }
+.h2h-players h3 { margin: 0 0 6px; font-size: var(--fs-sm); color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+
+/* live standings (in-match) + final board */
+.h2h-standings, .h2h-board { display: flex; flex-direction: column; gap: 6px; margin: var(--sp-sm) 0 var(--sp-md); }
+.stand {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--glass);
+}
+.stand.me { border-color: color-mix(in srgb, var(--accent) 55%, var(--line)); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.stand.done { opacity: 0.85; }
+.stand .st-rank { width: 1.6em; text-align: center; font-weight: 800; }
+.stand .st-name { flex: 1; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stand .st-streak { font-weight: 900; font-size: var(--fs-lg); min-width: 1.5em; text-align: right; }
+.stand .st-flag { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--gold); }
+
 .h2h-field { margin: var(--sp-md) 0; }
 .h2h-field label { display: block; font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 6px; }
 .h2h-field .search { width: 100%; }
